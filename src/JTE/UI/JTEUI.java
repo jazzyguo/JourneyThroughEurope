@@ -76,7 +76,8 @@ public class JTEUI extends Pane {
         SPLASH_SCREEN_STATE,
         PLAY_GAME_STATE,
         SELECT_PLAYERS_STATE,
-        VIEW_ABOUT_STATE,
+        VIEW_ABOUT_STATE, VIEW_GAME_ABOUT_STATE,
+        VIEW_HISTORY_STATE,
         MAP1_STATE, MAP2_STATE, MAP3_STATE, MAP4_STATE,
     }
 
@@ -102,6 +103,11 @@ public class JTEUI extends Pane {
     private FlowPane leftPane;
     private FlowPane rightPane;
     private FlowPane mapView;
+
+    //GameHistory
+    private JEditorPane gameHistoryPane;
+    private ScrollPane gameHistoryScrollPane;
+    private HBox historyNorthToolBar;
 
     //AboutPane
     private JEditorPane aboutPane;
@@ -355,8 +361,7 @@ public class JTEUI extends Pane {
         }
     }
 
-    private void initAboutPane() {
-        // WE'LL DISPLAY ALL STATS IN A JEditorPane
+    private void initGameAboutPane() {
         aboutPane = new JEditorPane();
         aboutPane.setEditable(false);
         aboutPane.setContentType("text/html");
@@ -383,8 +388,7 @@ public class JTEUI extends Pane {
             public void handle(ActionEvent event) {
                 try {
                     // TODO Auto-generated method stub
-                    eventHandler
-                            .respondToSwitchScreenRequest(JTEUIState.SPLASH_SCREEN_STATE);
+                    eventHandler.respondToSwitchScreenRequest(JTEUIState.PLAY_GAME_STATE);
                 } catch (IOException ex) {
                     Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -407,7 +411,87 @@ public class JTEUI extends Pane {
         } catch (IOException ex) {
             System.out.println(ex);
         }
+    }
 
+    private void initAboutPane() {
+        aboutPane = new JEditorPane();
+        aboutPane.setEditable(false);
+        aboutPane.setContentType("text/html");
+        aboutPane.setPreferredSize(new Dimension(800, 800));
+        SwingNode swingNode = new SwingNode();
+        swingNode.setContent(aboutPane);
+        aboutPane.setText("Journey Through Europe Wiki");
+        aboutScrollPane = new ScrollPane();
+        aboutScrollPane.setPrefSize(800, 800);
+        aboutScrollPane.setContent(swingNode);
+        aboutPaneNorthToolBar = new HBox();
+        aboutPaneNorthToolBar.setStyle("-fx-background-color:orange");
+        aboutPaneNorthToolBar.setAlignment(Pos.BASELINE_LEFT);
+        aboutPaneNorthToolBar.setPadding(marginlessInsets);
+        aboutPaneNorthToolBar.setSpacing(10.0);
+
+        // MAKE AND INIT THE BACK BUTTON
+        backButton = initToolbarButton(aboutPaneNorthToolBar,
+                JTEPropertyType.BACK2_IMG_NAME);
+        //setTooltip(backButton, SokobanPropertyType.GAME_TOOLTIP);
+        backButton.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    // TODO Auto-generated method stub
+                    eventHandler.respondToSwitchScreenRequest(JTEUIState.SPLASH_SCREEN_STATE);
+                } catch (IOException ex) {
+                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
+        URL url;
+        try {
+            url = new URL("http://en.wikipedia.org/wiki/Journey_Through_Europe");
+            URLConnection con = url.openConnection();
+            BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            String text = "";
+            while ((inputLine = br.readLine()) != null) {
+                text += inputLine;
+            }
+            aboutPane.setText(text);
+            br.close();
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        }
+    }
+
+    private void initGameHistoryScreen() {
+        gameHistoryPane = new JEditorPane();
+        gameHistoryPane.setEditable(false);
+        gameHistoryPane.setContentType("text/html");
+        gameHistoryPane.setPreferredSize(new Dimension(800, 800));
+        SwingNode swingNode = new SwingNode();
+        swingNode.setContent(gameHistoryPane);
+        gameHistoryPane.setText("Game History");
+        gameHistoryScrollPane = new ScrollPane();
+        gameHistoryScrollPane.setPrefSize(800, 800);
+        gameHistoryScrollPane.setContent(swingNode);
+        historyNorthToolBar = new HBox();
+        // MAKE AND INIT THE BACK BUTTON
+        backButton = initToolbarButton(historyNorthToolBar,
+                JTEPropertyType.BACK2_IMG_NAME);
+        //setTooltip(backButton, SokobanPropertyType.GAME_TOOLTIP);
+        backButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    // TODO Auto-generated method stub
+                    eventHandler.respondToSwitchScreenRequest(JTEUIState.PLAY_GAME_STATE);
+                } catch (IOException ex) {
+                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
     }
 
     private Button initToolbarButton(HBox toolbar, JTEPropertyType prop) {
@@ -441,6 +525,9 @@ public class JTEUI extends Pane {
         leftPane = new FlowPane(Orientation.VERTICAL);
         leftPane.resize(170, 640);
         leftPane.setStyle("-fx-background-color:orange");
+        Text currentPlayer = new Text();
+        currentPlayer.setText("Current Player");
+        leftPane.getChildren().add(currentPlayer);
         rightPane = new FlowPane(Orientation.VERTICAL);
         rightPane.resize(170, 640);
         rightPane.setStyle("-fx-background-color:orange");
@@ -465,17 +552,43 @@ public class JTEUI extends Pane {
         Image aboutImage = loadImage("gameabout.png");
         ImageView aboutImageView = new ImageView(aboutImage);
         gameAbout.setGraphic(aboutImageView);
+        gameAbout.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    // TODO Auto-generated method stub
+                    initGameAboutPane();
+                    eventHandler.respondToSwitchScreenRequest(JTEUIState.VIEW_GAME_ABOUT_STATE);
+                } catch (IOException ex) {
+                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
         gameHistory = new Button();
         gameHistory.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image historyImage = loadImage("history.png");
         ImageView historyImageView = new ImageView(historyImage);
         gameHistory.setGraphic(historyImageView);
+        gameHistory.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    // TODO Auto-generated method stub
+                    initGameHistoryScreen();
+                    eventHandler.respondToSwitchScreenRequest(JTEUIState.VIEW_HISTORY_STATE);
+                } catch (IOException ex) {
+                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
         save = new Button();
         save.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image saveImage = loadImage("save.png");
         ImageView saveImageView = new ImageView(saveImage);
         save.setGraphic(saveImageView);
         mapView = new FlowPane();
+        mapView.setPrefWrapLength(170);
         Button map1 = new Button();
         Image map1Image = loadImage("mapb1.jpg");
         ImageView map1ImageView = new ImageView(map1Image);
@@ -520,9 +633,20 @@ public class JTEUI extends Pane {
                 gc.drawImage(mapQuadrant4, 0, 0);
             }
         });
+        Button quitButton = new Button();
+        quitButton.setStyle("-fx-background-color:orange;-fx-border-color: brown");
+        Image quitImage = loadImage("quit.png");
+        ImageView quitImageView = new ImageView(quitImage);
+        quitButton.setGraphic(quitImageView);
+        quitButton.setOnAction(new EventHandler<ActionEvent>() {
 
+            @Override
+            public void handle(ActionEvent event) {
+                eventHandler.respondToExitRequest(primaryStage);
+            }
+        });
         mapView.getChildren().addAll(map1, map2, map3, map4);
-        rightPane.getChildren().addAll(mapView, gameAbout, gameHistory, save);
+        rightPane.getChildren().addAll(mapView, gameAbout, gameHistory, save, quitButton);
         gamePanel.setRight(rightPane);
         gamePanel.setLeft(leftPane);
     }
@@ -550,6 +674,12 @@ public class JTEUI extends Pane {
                 mainPane.setCenter(splashScreenPane);
                 primaryStage.setTitle("Journey Through Europe");
                 break;
+            case VIEW_HISTORY_STATE:
+                mainPane.getChildren().clear();
+                mainPane.setCenter(gameHistoryScrollPane);
+                mainPane.setTop(historyNorthToolBar);
+                primaryStage.setTitle("Current Game History");
+                break;
             case SELECT_PLAYERS_STATE:
                 mainPane.getChildren().clear();
                 mainPane.setCenter(selectPlayersPane);
@@ -560,6 +690,12 @@ public class JTEUI extends Pane {
                 mainPane.getChildren().clear();
                 mainPane.setCenter(gamePanel);
                 primaryStage.setTitle("Journey Through Europe Game");
+                break;
+            case VIEW_GAME_ABOUT_STATE:
+                mainPane.getChildren().clear();
+                mainPane.setCenter(aboutScrollPane);
+                mainPane.setTop(aboutPaneNorthToolBar);
+                primaryStage.setTitle("Journey Through Europe Wiki");
                 break;
             case VIEW_ABOUT_STATE:
                 mainPane.getChildren().clear();
