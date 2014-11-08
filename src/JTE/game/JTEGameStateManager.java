@@ -5,10 +5,15 @@
  */
 package JTE.game;
 
+import JTE.UI.JTEUI;
+
 /**
  *
  * @author Jazzy
  */
 public class JTEGameStateManager {
+
+    public JTEGameStateManager(JTEUI aThis) {
+    }
     
 }

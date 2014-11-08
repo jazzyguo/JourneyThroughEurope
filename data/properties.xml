@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The properties in this file are loaded when the HangMan game application
+    first loads.
+-->
+<properties>
+    <property_list>    
+        <property name="SPLASH_SCREEN_TITLE_TEXT"   value="Journey Through Europe"></property>
+        <property name="WINDOW_WIDTH"               value="820"></property>
+        <property name="WINDOW_HEIGHT"              value="820"></property>
+        <property name="SPLASH_SCREEN_IMAGE_NAME"   value="GAME.jpg"></property>
+        <property name="DATA_PATH"                  value="./data/"></property>
+        <property name="IMG_PATH"                   value="./images/"></property>
+        <property name="LETTERS_FONT_FAMILY"        value="monospaced"></property>
+        <property name="LETTERS_FONT_SIZE"          value="24"></property>
+        <property name="DEFAULT_YES_TEXT"           value="Yes"></property>
+        <property name="DEFAULT_NO_TEXT"            value="No"></property>
+        <property name="DEFAULT_EXIT_TEXT"          value="Are you sure you wish to Quit?"></property>
+        <property name="START_IMG_NAME"             value="start.png"></property>
+        <property name="LOAD_IMG_NAME"             value="load.png"></property>
+        <property name="ABOUT_IMG_NAME"             value="about.png"></property>
+        <property name="EXIT_IMG_NAME"             value="Exit.png"></property>
+        <property name="BACK_IMG_NAME"             value="back.png"></property>
+        <property name="BACK2_IMG_NAME"             value="back2.png"></property>
+        <property name="PLAYER1_IMG_NAME"             value="1.png"></property>
+        <property name="PLAYER2_IMG_NAME"             value="2.png"></property>
+        <property name="PLAYER3_IMG_NAME"             value="3.png"></property>
+        <property name="PLAYER4_IMG_NAME"             value="4.png"></property>
+        <property name="PLAYER5_IMG_NAME"             value="5.png"></property>
+        <property name="PLAYER6_IMG_NAME"             value="6.png"></property>
+
+
+
+
+    </property_list>
+    <property_options_list>
+        <property_options name="LEVEL_IMAGE_NAMES">
+            <option>level_1.png</option>
+            <option>level_2.png</option>
+            <option>level_3.png</option>
+            <option>level_4.png</option>
+            <option>level_5.png</option>
+            <option>level_6.png</option>
+            <option>level_7.png</option>
+        </property_options>
+    </property_options_list>
+</properties>

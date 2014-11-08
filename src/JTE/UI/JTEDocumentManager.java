@@ -10,5 +10,8 @@ package JTE.UI;
  * @author Jazzy
  */
 public class JTEDocumentManager {
+
+    JTEDocumentManager(JTEUI aThis) {
+    }
     
 }
