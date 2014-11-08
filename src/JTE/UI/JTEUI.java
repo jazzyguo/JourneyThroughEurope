@@ -14,9 +14,9 @@ import JTE.game.JTEGameStateManager;
 import java.awt.Dimension;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -37,17 +37,23 @@ import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
@@ -56,8 +62,10 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javax.swing.BorderFactory;
 
 public class JTEUI extends Pane {
 
@@ -69,6 +77,7 @@ public class JTEUI extends Pane {
         PLAY_GAME_STATE,
         SELECT_PLAYERS_STATE,
         VIEW_ABOUT_STATE,
+        MAP1_STATE, MAP2_STATE, MAP3_STATE, MAP4_STATE,
     }
 
     private BorderPane mainPane;
@@ -84,7 +93,15 @@ public class JTEUI extends Pane {
     private FlowPane optionSelectionPane;
 
     // GamePane
-    private StackPane gamePane;
+    private BorderPane gamePanel;
+    private Canvas map;
+    private GraphicsContext gc;
+    private Button gameHistory;
+    private Button gameAbout;
+    private Button save;
+    private FlowPane leftPane;
+    private FlowPane rightPane;
+    private FlowPane mapView;
 
     //AboutPane
     private JEditorPane aboutPane;
@@ -95,7 +112,8 @@ public class JTEUI extends Pane {
     //SelectPlayersPane
     private FlowPane selectPlayersPane;
     private HBox selectPlayersNorthToolBar;
-
+    private ComboBox numPlayers;
+    private Button go;
     // Padding
     private Insets marginlessInsets;
 
@@ -170,19 +188,18 @@ public class JTEUI extends Pane {
                 .getProperty(JTEPropertyType.WINDOW_WIDTH));
         paneHeigth = Integer.parseInt(props
                 .getProperty(JTEPropertyType.WINDOW_HEIGHT));
-        mainPane.resize(890, 535);
+        mainPane.resize(890, 640);
         mainPane.setPadding(marginlessInsets);
     }
 
     public void initSplashScreen() {
         PropertiesManager props = PropertiesManager.getPropertiesManager();
         String splashScreenImagePath = props.getProperty(JTEPropertyType.SPLASH_SCREEN_IMAGE_NAME);
-
         splashScreenPane = new StackPane();
-
         Image splashScreenImage = loadImage(splashScreenImagePath);
         splashScreenImageView = new ImageView(splashScreenImage);
-
+        splashScreenImageView.setFitWidth(880);
+        splashScreenImageView.setFitHeight(630);
         splashScreenImageLabel = new Label();
         splashScreenImageLabel.setGraphic(splashScreenImageView);
         splashScreenPane.getChildren().add(splashScreenImageLabel);
@@ -190,21 +207,25 @@ public class JTEUI extends Pane {
         optionSelectionPane.setAlignment(Pos.BOTTOM_CENTER);
         //LOAD SPLASH SCREEN OPTION
         Button startButton = new Button();
+        startButton.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image startImage = loadImage("start.png");
         ImageView startImageView = new ImageView(startImage);
         startButton.setGraphic(startImageView);
         optionSelectionPane.getChildren().add(startButton);
         Button loadButton = new Button();
+        loadButton.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image loadImage = loadImage("load.png");
         ImageView loadImageView = new ImageView(loadImage);
         loadButton.setGraphic(loadImageView);
         optionSelectionPane.getChildren().add(loadButton);
         Button aboutButton = new Button();
+        aboutButton.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image aboutImage = loadImage("about.png");
         ImageView aboutImageView = new ImageView(aboutImage);
         aboutButton.setGraphic(aboutImageView);
         optionSelectionPane.getChildren().add(aboutButton);
         Button quitButton = new Button();
+        quitButton.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image quitImage = loadImage("Exit.png");
         ImageView quitImageView = new ImageView(quitImage);
         quitButton.setGraphic(quitImageView);
@@ -272,9 +293,10 @@ public class JTEUI extends Pane {
 
     private void initSelectPlayersScreen() {
         selectPlayersPane = new FlowPane();
+        selectPlayersPane.setStyle("-fx-background-color:orange");
         selectPlayersNorthToolBar = new HBox();
         selectPlayersNorthToolBar.setStyle("-fx-background-color:brown");
-        selectPlayersNorthToolBar.setAlignment(Pos.CENTER);
+        selectPlayersNorthToolBar.setAlignment(Pos.BASELINE_LEFT);
         selectPlayersNorthToolBar.setPadding(marginlessInsets);
         selectPlayersNorthToolBar.setSpacing(10.0);
         // MAKE AND INIT THE BACK BUTTON
@@ -293,14 +315,43 @@ public class JTEUI extends Pane {
                 }
             }
         });
+        numPlayers = new ComboBox();
+        numPlayers.getItems().addAll("1", "2", "3", "4", "5", "6");
+        Text numPlayersText = new Text();
+        numPlayersText.setText("Number of Players");
+        go = new Button();
+        go.setText("GO");
+        go.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    initGameScreen();
+                    eventHandler.respondToSwitchScreenRequest(JTEUIState.PLAY_GAME_STATE);
+                } catch (IOException ex) {
+                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
+        selectPlayersNorthToolBar.getChildren().addAll(numPlayersText, numPlayers, go);
         for (int i = 1; i < 7; i++) {
             FlowPane playerPane = new FlowPane();
+            playerPane.setHgap(7);
             String imageString = "" + i + ".png";
             Image playerImage = loadImage(imageString);
             ImageView playerImageView = new ImageView(playerImage);
+            playerImageView.setFitHeight(160);
+            playerImageView.setFitWidth(160);
             playerPane.getChildren().add(playerImageView);
             playerPane.setStyle("-fx-background-color:orange");
+            playerPane.setStyle("-fx-border-color: black");
             selectPlayersPane.getChildren().add(playerPane);
+            RadioButton playerButton = new RadioButton();
+            playerButton.setText("Player");
+            RadioButton computerButton = new RadioButton();
+            computerButton.setText("Computer");
+            TextField playerName = new TextField();
+            playerName.setText("Player " + i);
+            playerPane.getChildren().addAll(playerButton, computerButton, playerName);
         }
     }
 
@@ -318,13 +369,13 @@ public class JTEUI extends Pane {
         aboutScrollPane.setContent(swingNode);
         aboutPaneNorthToolBar = new HBox();
         aboutPaneNorthToolBar.setStyle("-fx-background-color:orange");
-        aboutPaneNorthToolBar.setAlignment(Pos.CENTER);
+        aboutPaneNorthToolBar.setAlignment(Pos.BASELINE_LEFT);
         aboutPaneNorthToolBar.setPadding(marginlessInsets);
         aboutPaneNorthToolBar.setSpacing(10.0);
 
         // MAKE AND INIT THE BACK BUTTON
         backButton = initToolbarButton(aboutPaneNorthToolBar,
-                JTEPropertyType.BACK_IMG_NAME);
+                JTEPropertyType.BACK2_IMG_NAME);
         //setTooltip(backButton, SokobanPropertyType.GAME_TOOLTIP);
         backButton.setOnAction(new EventHandler<ActionEvent>() {
 
@@ -386,6 +437,98 @@ public class JTEUI extends Pane {
      * the user's requests.
      */
     public void initGameScreen() {
+        gamePanel = new BorderPane();
+        leftPane = new FlowPane(Orientation.VERTICAL);
+        leftPane.resize(170, 640);
+        leftPane.setStyle("-fx-background-color:orange");
+        rightPane = new FlowPane(Orientation.VERTICAL);
+        rightPane.resize(170, 640);
+        rightPane.setStyle("-fx-background-color:orange");
+        map = new Canvas();
+        map.setWidth(550);
+        map.setHeight(640);
+        gc = map.getGraphicsContext2D();
+        Image mapQuadrant1 = new Image("file:images/map1.jpg");
+        Image mapQuadrant2 = new Image("file:images/map2.jpg");
+        Image mapQuadrant3 = new Image("file:images/map3.jpg");
+        Image mapQuadrant4 = new Image("file:images/map4.jpg");
+        gc.drawImage(mapQuadrant1, 0, 0);
+        gamePanel.setCenter(map);
+        map.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                eventHandler.mouseClicked(event);
+            }
+        });
+        gameAbout = new Button();
+        gameAbout.setStyle("-fx-background-color:orange;-fx-border-color: brown");
+        Image aboutImage = loadImage("gameabout.png");
+        ImageView aboutImageView = new ImageView(aboutImage);
+        gameAbout.setGraphic(aboutImageView);
+        gameHistory = new Button();
+        gameHistory.setStyle("-fx-background-color:orange;-fx-border-color: brown");
+        Image historyImage = loadImage("history.png");
+        ImageView historyImageView = new ImageView(historyImage);
+        gameHistory.setGraphic(historyImageView);
+        save = new Button();
+        save.setStyle("-fx-background-color:orange;-fx-border-color: brown");
+        Image saveImage = loadImage("save.png");
+        ImageView saveImageView = new ImageView(saveImage);
+        save.setGraphic(saveImageView);
+        mapView = new FlowPane();
+        Button map1 = new Button();
+        Image map1Image = loadImage("mapb1.jpg");
+        ImageView map1ImageView = new ImageView(map1Image);
+        map1.setGraphic(map1ImageView);
+        Button map2 = new Button();
+        Image map2Image = loadImage("mapb2.jpg");
+        ImageView map2ImageView = new ImageView(map2Image);
+        map2.setGraphic(map2ImageView);
+        Button map3 = new Button();
+        Image map3Image = loadImage("mapb3.jpg");
+        ImageView map3ImageView = new ImageView(map3Image);
+        map3.setGraphic(map3ImageView);
+        Button map4 = new Button();
+        Image map4Image = loadImage("mapb4.jpg");
+        ImageView map4ImageView = new ImageView(map4Image);
+        map4.setGraphic(map4ImageView);
+        map1.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant1, 0, 0);
+            }
+        });
+        map2.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant2, 0, 0);
+            }
+        });
+        map3.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant3, 0, 0);
+            }
+        });
+        map4.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant4, 0, 0);
+            }
+        });
+
+        mapView.getChildren().addAll(map1, map2, map3, map4);
+        rightPane.getChildren().addAll(mapView, gameAbout, gameHistory, save);
+        gamePanel.setRight(rightPane);
+        gamePanel.setLeft(leftPane);
+    }
+
+    public void repaint() {
+        gc = map.getGraphicsContext2D();
     }
 
     public Image loadImage(String imageName) {
@@ -413,7 +556,13 @@ public class JTEUI extends Pane {
                 mainPane.setTop(selectPlayersNorthToolBar);
                 primaryStage.setTitle("Select Players");
                 break;
+            case PLAY_GAME_STATE:
+                mainPane.getChildren().clear();
+                mainPane.setCenter(gamePanel);
+                primaryStage.setTitle("Journey Through Europe Game");
+                break;
             case VIEW_ABOUT_STATE:
+                mainPane.getChildren().clear();
                 mainPane.setCenter(aboutScrollPane);
                 mainPane.setTop(aboutPaneNorthToolBar);
                 primaryStage.setTitle("Journey Through Europe Wiki");
