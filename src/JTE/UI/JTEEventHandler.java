@@ -12,7 +12,11 @@ import application.Main.JTEPropertyType;
 import properties_manager.PropertiesManager;
 
 import JTE.file.JTEFileLoader;
+import JTE.game.JTEGameData;
+import JTE.game.JTEGameData.City;
 import JTE.game.JTEGameStateManager;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -34,6 +38,7 @@ import javafx.util.Duration;
 public class JTEEventHandler {
 
     private JTEUI ui;
+    private JTEGameData data;
 
     /**
      * Constructor that simply saves the ui for later.
@@ -60,7 +65,15 @@ public class JTEEventHandler {
      * This method responds to when the user presses the new game method.
      */
     public void respondToNewGameRequest() {
+        ui.initGameScreen();
+        data = new JTEGameData();
         JTEGameStateManager gsm = ui.getGSM();
+        try {
+            respondToSwitchScreenRequest(JTEUI.JTEUIState.PLAY_GAME_STATE);
+        } catch (IOException ex) {
+            Logger.getLogger(JTEEventHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 
     /**
@@ -125,6 +138,19 @@ public class JTEEventHandler {
     }
 
     void mouseClicked(MouseEvent event) {
-        System.out.println(event.getX() + "," + event.getY());
+        ArrayList<City> cities = data.getCities();
+        double mouseX = event.getX();
+        double mouseY = event.getY();
+        System.out.println(mouseX + "," + mouseY);
+        int n = cities.size();
+        for (int i = 0; i < n; i++) {
+            double citiesX = cities.get(i).getCoordinates().getX();
+            double citiesY = cities.get(i).getCoordinates().getY();
+            if ((mouseX > citiesX - 5 && mouseX < citiesX + 5)
+                    && (mouseY > citiesY - 5 && mouseY < citiesY + 5)
+                    && (ui.getMap() == cities.get(i).getQuadrant())) {
+                System.out.println(cities.get(i).getName());
+            }
+        }
     }
 }

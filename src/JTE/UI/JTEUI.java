@@ -33,6 +33,8 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -49,6 +51,7 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
@@ -103,11 +106,15 @@ public class JTEUI extends Pane {
     private FlowPane leftPane;
     private FlowPane rightPane;
     private FlowPane mapView;
+    private int currentMap;
 
     //GameHistory
     private JEditorPane gameHistoryPane;
     private ScrollPane gameHistoryScrollPane;
     private HBox historyNorthToolBar;
+
+    //PlayerPane
+    private FlowPane playerPane;
 
     //AboutPane
     private JEditorPane aboutPane;
@@ -183,6 +190,10 @@ public class JTEUI extends Pane {
 
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
+    }
+
+    public int getMap() {
+        return currentMap;
     }
 
     public void initMainPane() {
@@ -325,40 +336,50 @@ public class JTEUI extends Pane {
         numPlayers.getItems().addAll("1", "2", "3", "4", "5", "6");
         Text numPlayersText = new Text();
         numPlayersText.setText("Number of Players");
+        numPlayers.setValue("Select");
+        numPlayers.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
+            public void changed(ObservableValue<? extends String> ov, String old_val, String new_val) {
+            }
+
+            @Override
+            public void changed(ObservableValue observable, Object oldValue, Object newValue) {
+                int n = Integer.parseInt((String) newValue);
+                selectPlayersPane.getChildren().clear();
+                for (int i = 1; i < n + 1; i++) {
+                    playerPane = new FlowPane();
+                    playerPane.setHgap(7);
+                    String imageString = "" + i + ".png";
+                    Image playerImage = loadImage(imageString);
+                    ImageView playerImageView = new ImageView(playerImage);
+                    playerImageView.setFitHeight(160);
+                    playerImageView.setFitWidth(160);
+                    playerPane.getChildren().add(playerImageView);
+                    playerPane.setStyle("-fx-background-color:orange");
+                    playerPane.setStyle("-fx-border-color: black");
+                    RadioButton playerButton = new RadioButton();
+                    playerButton.setText("Player");
+                    RadioButton computerButton = new RadioButton();
+                    computerButton.setText("Computer");
+                    TextField playerName = new TextField();
+                    playerName.setText("Player " + i);
+                    ToggleGroup group = new ToggleGroup();
+                    playerButton.setToggleGroup(group);
+                    computerButton.setToggleGroup(group);
+                    playerPane.getChildren().addAll(playerButton, computerButton, playerName);
+                    selectPlayersPane.getChildren().add(playerPane);
+                }
+            }
+        });
         go = new Button();
         go.setText("GO");
         go.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                try {
-                    initGameScreen();
-                    eventHandler.respondToSwitchScreenRequest(JTEUIState.PLAY_GAME_STATE);
-                } catch (IOException ex) {
-                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                eventHandler.respondToNewGameRequest();
             }
         });
         selectPlayersNorthToolBar.getChildren().addAll(numPlayersText, numPlayers, go);
-        for (int i = 1; i < 7; i++) {
-            FlowPane playerPane = new FlowPane();
-            playerPane.setHgap(7);
-            String imageString = "" + i + ".png";
-            Image playerImage = loadImage(imageString);
-            ImageView playerImageView = new ImageView(playerImage);
-            playerImageView.setFitHeight(160);
-            playerImageView.setFitWidth(160);
-            playerPane.getChildren().add(playerImageView);
-            playerPane.setStyle("-fx-background-color:orange");
-            playerPane.setStyle("-fx-border-color: black");
-            selectPlayersPane.getChildren().add(playerPane);
-            RadioButton playerButton = new RadioButton();
-            playerButton.setText("Player");
-            RadioButton computerButton = new RadioButton();
-            computerButton.setText("Computer");
-            TextField playerName = new TextField();
-            playerName.setText("Player " + i);
-            playerPane.getChildren().addAll(playerButton, computerButton, playerName);
-        }
+
     }
 
     private void initGameAboutPane() {
@@ -521,6 +542,7 @@ public class JTEUI extends Pane {
      * the user's requests.
      */
     public void initGameScreen() {
+        currentMap = 1;
         gamePanel = new BorderPane();
         leftPane = new FlowPane(Orientation.VERTICAL);
         leftPane.resize(170, 640);
@@ -608,6 +630,7 @@ public class JTEUI extends Pane {
         map1.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                currentMap = 1;
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant1, 0, 0);
             }
@@ -615,6 +638,7 @@ public class JTEUI extends Pane {
         map2.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                currentMap = 2;
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant2, 0, 0);
             }
@@ -622,6 +646,7 @@ public class JTEUI extends Pane {
         map3.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                currentMap = 3;
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant3, 0, 0);
             }
@@ -629,6 +654,7 @@ public class JTEUI extends Pane {
         map4.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                currentMap = 4;
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant4, 0, 0);
             }
