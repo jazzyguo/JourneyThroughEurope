@@ -10,6 +10,8 @@ import application.Main.JTEPropertyType;
 import properties_manager.PropertiesManager;
 
 import JTE.file.JTEFileLoader;
+import JTE.game.JTEGameData;
+import JTE.game.JTEGameData.Player;
 import JTE.game.JTEGameStateManager;
 import java.awt.Dimension;
 import java.io.BufferedInputStream;
@@ -127,6 +129,9 @@ public class JTEUI extends Pane {
     private HBox selectPlayersNorthToolBar;
     private ComboBox numPlayers;
     private Button go;
+    ArrayList<Player> players;
+    int numOfPlayers;
+
     // Padding
     private Insets marginlessInsets;
 
@@ -139,6 +144,7 @@ public class JTEUI extends Pane {
     private JTEDocumentManager docManager;
     private JTEGameStateManager gsm;
     private JTEFileLoader fileLoader;
+    private JTEGameData data;
 
     public JTEUI() {
         gsm = new JTEGameStateManager(this);
@@ -184,6 +190,14 @@ public class JTEUI extends Pane {
         return fileLoader;
     }
 
+    public JTEGameData getData() {
+        return data;
+    }
+
+    public void setData(JTEGameData data) {
+        this.data = data;
+    }
+
     public Stage getPrimaryStage() {
         return this.primaryStage;
     }
@@ -194,6 +208,14 @@ public class JTEUI extends Pane {
 
     public int getMap() {
         return currentMap;
+    }
+
+    public int getNumOfPlayers() {
+        return numOfPlayers;
+    }
+
+    public ArrayList getPlayers() {
+        return players;
     }
 
     public void initMainPane() {
@@ -344,8 +366,11 @@ public class JTEUI extends Pane {
             @Override
             public void changed(ObservableValue observable, Object oldValue, Object newValue) {
                 int n = Integer.parseInt((String) newValue);
+                numOfPlayers = n;
                 selectPlayersPane.getChildren().clear();
+                players = new ArrayList<>();
                 for (int i = 1; i < n + 1; i++) {
+                    Player player = new Player();
                     playerPane = new FlowPane();
                     playerPane.setHgap(7);
                     String imageString = "" + i + ".png";
@@ -365,6 +390,11 @@ public class JTEUI extends Pane {
                     ToggleGroup group = new ToggleGroup();
                     playerButton.setToggleGroup(group);
                     computerButton.setToggleGroup(group);
+                    playerButton.setOnAction(e -> player.setHuman());
+                    computerButton.setOnAction(e -> player.setComputer());
+                    player.setName(playerName.getText());
+                    playerName.setOnKeyTyped(e -> player.setName(playerName.getText()));
+                    players.add(player);
                     playerPane.getChildren().addAll(playerButton, computerButton, playerName);
                     selectPlayersPane.getChildren().add(playerPane);
                 }

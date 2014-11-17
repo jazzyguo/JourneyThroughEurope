@@ -67,11 +67,17 @@ public class JTEEventHandler {
     public void respondToNewGameRequest() {
         ui.initGameScreen();
         data = new JTEGameData();
+        ui.setData(data);
+        data.setPlayers(ui.getPlayers());
         JTEGameStateManager gsm = ui.getGSM();
         try {
             respondToSwitchScreenRequest(JTEUI.JTEUIState.PLAY_GAME_STATE);
         } catch (IOException ex) {
             Logger.getLogger(JTEEventHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        for (int i = 0; i < data.getPlayers().size(); i++) {
+            System.out.println(data.getPlayers().get(i).getName());
+            System.out.println(data.getPlayers().get(i).isHuman());
         }
 
     }
@@ -150,6 +156,19 @@ public class JTEEventHandler {
                     && (mouseY > citiesY - 5 && mouseY < citiesY + 5)
                     && (ui.getMap() == cities.get(i).getQuadrant())) {
                 System.out.println(cities.get(i).getName());
+                Stage dialogStage = new Stage();
+                dialogStage.initModality(Modality.WINDOW_MODAL);
+                BorderPane exitPane = new BorderPane();
+                Button cityButton = new Button();
+                cityButton.setText(cities.get(i).getName());
+                exitPane.setCenter(cityButton);
+                Scene scene = new Scene(exitPane, 250, 100);
+                dialogStage.setScene(scene);
+                dialogStage.show();
+                // WHAT'S THE USER'S DECISION?
+                cityButton.setOnAction(e -> {
+                    dialogStage.close();
+                });
             }
         }
     }
