@@ -25,8 +25,10 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -80,6 +82,27 @@ public class JTEEventHandler {
             System.out.println(data.getPlayers().get(i).isHuman());
         }
 
+    }
+
+    public void respondToSwitchMapView(int currentMap, GraphicsContext gc, Image mapQuadrant) {
+        switch (currentMap) {
+            case 1:
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant, 0, 0);
+                break;
+            case 2:
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant, 0, 0);
+                break;
+            case 3:
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant, 0, 0);
+                break;
+            case 4:
+                gc.clearRect(0, 0, 550, 640);
+                gc.drawImage(mapQuadrant, 0, 0);
+                break;
+        }
     }
 
     /**
@@ -172,4 +195,5 @@ public class JTEEventHandler {
             }
         }
     }
+
 }

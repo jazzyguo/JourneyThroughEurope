@@ -97,6 +97,11 @@ public class JTEUI extends Pane {
     private StackPane splashScreenPane;
     private Label splashScreenImageLabel;
     private FlowPane optionSelectionPane;
+    //MapImage
+    Image mapQuadrant1 = new Image("file:images/map1.jpg");
+    Image mapQuadrant2 = new Image("file:images/map2.jpg");
+    Image mapQuadrant3 = new Image("file:images/map3.jpg");
+    Image mapQuadrant4 = new Image("file:images/map4.jpg");
 
     // GamePane
     private BorderPane gamePanel;
@@ -587,10 +592,6 @@ public class JTEUI extends Pane {
         map.setWidth(550);
         map.setHeight(640);
         gc = map.getGraphicsContext2D();
-        Image mapQuadrant1 = new Image("file:images/map1.jpg");
-        Image mapQuadrant2 = new Image("file:images/map2.jpg");
-        Image mapQuadrant3 = new Image("file:images/map3.jpg");
-        Image mapQuadrant4 = new Image("file:images/map4.jpg");
         gc.drawImage(mapQuadrant1, 0, 0);
         gamePanel.setCenter(map);
         map.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -661,32 +662,29 @@ public class JTEUI extends Pane {
             @Override
             public void handle(ActionEvent event) {
                 currentMap = 1;
-                gc.clearRect(0, 0, 550, 640);
-                gc.drawImage(mapQuadrant1, 0, 0);
+                eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant1);             
             }
         });
         map2.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 currentMap = 2;
-                gc.clearRect(0, 0, 550, 640);
-                gc.drawImage(mapQuadrant2, 0, 0);
+                eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant2);
             }
         });
         map3.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 currentMap = 3;
-                gc.clearRect(0, 0, 550, 640);
-                gc.drawImage(mapQuadrant3, 0, 0);
+                eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant3);
             }
         });
         map4.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 currentMap = 4;
-                gc.clearRect(0, 0, 550, 640);
-                gc.drawImage(mapQuadrant4, 0, 0);
+                eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant4);
+
             }
         });
         Button quitButton = new Button();

@@ -8,6 +8,8 @@ package JTE.game;
 import java.util.ArrayList;
 import big.data.DataSource;
 import big.data.DataSourceIterator;
+import java.util.HashMap;
+import javafx.scene.image.Image;
 
 /**
  *
@@ -17,13 +19,16 @@ public class JTEGameData {
 
     private ArrayList<City> cities;
     private ArrayList<Player> players;
+    private HashMap<String,ArrayList<String>> cityLandNeighbors;
+    private HashMap<String,ArrayList<String>> citySeaNeighbors;
+    
     /*
      * Construct this object when a game begins.
      */
-
     public JTEGameData() {
         cities = new ArrayList<>();
         initCities("cities.txt");
+        initCityNeighbors("city_neighbor.txt", "sea_neighbor.txt");
     }
 
     public ArrayList<City> getCities() {
@@ -38,7 +43,7 @@ public class JTEGameData {
         this.players = players;
     }
 
-    public void initCities(String csvFile) {
+    private void initCities(String csvFile) {
         DataSource ds = DataSource.connectCSV(csvFile);
         ds.load();
         DataSourceIterator iter = ds.iterator();
@@ -62,6 +67,20 @@ public class JTEGameData {
             this.cities.add(city);
             iter.loadNext();
         }
+    }
+
+    private void initCityNeighbors(String landFile, String seaFile) {
+        initCityLandNeighbors(landFile);
+        initCitySeaNeighbors(seaFile);
+    }
+
+    private void initCityLandNeighbors(String file) {
+        
+    }        
+
+
+    private void initCitySeaNeighbors(String file) {
+
     }
 
     public static class Player {
@@ -118,7 +137,8 @@ public class JTEGameData {
     }
 
     private static class Card {
-
+        private Image front, back;
+        private String color, name;
         public Card() {
         }
     }
