@@ -5,11 +5,19 @@
  */
 package JTE.game;
 
+import JTE.UI.JTEUI;
 import java.util.ArrayList;
 import big.data.DataSource;
 import big.data.DataSourceIterator;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 /**
  *
@@ -19,16 +27,23 @@ public class JTEGameData {
 
     private ArrayList<City> cities;
     private ArrayList<Player> players;
-    private HashMap<String,ArrayList<String>> cityLandNeighbors;
-    private HashMap<String,ArrayList<String>> citySeaNeighbors;
-    
+    private ArrayList<Card> cards;
+    private HashMap<String, String[]> cityLandNeighbors;
+    private HashMap<String, String[]> citySeaNeighbors;
+    private String ImgPath = "file:images/";
+    private JTEUI ui;
     /*
      * Construct this object when a game begins.
      */
+
     public JTEGameData() {
         cities = new ArrayList<>();
+        cards = new ArrayList<>();
+        cityLandNeighbors = new HashMap<String, String[]>();
+        citySeaNeighbors = new HashMap<String, String[]>();
         initCities("cities.txt");
         initCityNeighbors("city_neighbor.txt", "sea_neighbor.txt");
+        initCards();
     }
 
     public ArrayList<City> getCities() {
@@ -39,8 +54,24 @@ public class JTEGameData {
         return players;
     }
 
+    public ArrayList<Card> getCards() {
+        return cards;
+    }
+
+    public HashMap<String, String[]> getCityLandNeighbors() {
+        return cityLandNeighbors;
+    }
+
+    public HashMap<String, String[]> getCitySeaNeighbors() {
+        return citySeaNeighbors;
+    }
+
     public void setPlayers(ArrayList<Player> players) {
         this.players = players;
+    }
+
+    public void setUI(JTEUI ui) {
+        this.ui = ui;
     }
 
     private void initCities(String csvFile) {
@@ -75,24 +106,139 @@ public class JTEGameData {
     }
 
     private void initCityLandNeighbors(String file) {
-        
-    }        
-
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(file));
+            String str;
+            str = in.readLine();
+            while ((str = in.readLine()) != null) {
+                String[] landN = str.split(",");
+                String city = landN[0];
+                String[] copyOfRange = Arrays.copyOfRange(landN, 1, landN.length);
+                cityLandNeighbors.put(city, copyOfRange);
+            }
+            in.close();
+        } catch (IOException e) {
+        }
+    }
 
     private void initCitySeaNeighbors(String file) {
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(file));
+            String str;
+            str = in.readLine();
+            while ((str = in.readLine()) != null) {
+                String[] seaN = str.split(",");
+                String city = seaN[0];
+                String[] copyOfRange = Arrays.copyOfRange(seaN, 1, seaN.length);
+                citySeaNeighbors.put(city, copyOfRange);
+            }
+            in.close();
+        } catch (IOException e) {
+        }
+    }
 
+    private void initCards() {
+        for (City city : cities) {
+            String color = city.getColor();
+            String name = city.getName();
+            String frontString, backString;
+            Image front, back;
+            Card card;
+            File f, p;
+            switch (color) {
+                case "red":
+                    frontString = "red/" + city.getName() + ".jpg";
+                    System.out.println(frontString);
+                    f = new File("images/red/" + city.getName() + "_I.jpg");
+                    p = new File("images/red/" + city.getName() + "_I.png");
+                    if (f.exists()) {
+                        backString = "red/" + city.getName() + "_I.jpg";
+                        System.out.println(backString);
+                        back = loadImage(backString);
+                    }
+                    if (p.exists()) {
+                        backString = "red/" + city.getName() + "_I.png";
+                        System.out.println(backString);
+                        back = loadImage(backString);
+                    } else {
+                        backString = frontString;
+                    }
+                    front = loadImage(frontString);
+                    back = loadImage(frontString);
+                    card = new Card(color, name, front, back);
+                    cards.add(card);
+                    break;
+                case "green":
+                    frontString = "green/" + city.getName() + ".jpg";
+                    System.out.println(frontString);
+                    f = new File("images/green/" + city.getName() + "_I.jpg");
+                    p = new File("images/green/" + city.getName() + "_I.png");
+                    if (f.exists()) {
+                        backString = "green/" + city.getName() + "_I.jpg";
+                        System.out.println(backString);
+                        back = loadImage(backString);
+                    }
+                    if (p.exists()) {
+                        backString = "green/" + city.getName() + "_I.png";
+                        System.out.println(backString);
+                        back = loadImage(backString);
+                    } else {
+                        backString = frontString;
+                    }
+                    front = loadImage(frontString);
+                    back = loadImage(frontString);
+                    card = new Card(color, name, front, back);
+                    cards.add(card);
+                    break;
+                case "yellow":
+                    frontString = "yellow/" + city.getName() + ".jpg";
+                    System.out.println(frontString);
+                    f = new File("images/yellow/" + city.getName() + "_I.jpg");
+                    p = new File("images/yellow/" + city.getName() + "_I.png");
+                    if (f.exists()) {
+                        backString = "yellow/" + city.getName() + "_I.jpg";
+                        System.out.println(backString);
+                        back = loadImage(backString);
+                    }
+                    if (p.exists()) {
+                        backString = "yellow/" + city.getName() + "_I.png";
+                        System.out.println(backString);
+                        back = loadImage(backString);
+                    } else {
+                        backString = frontString;
+                    }
+                    front = loadImage(frontString);
+                    back = loadImage(frontString);
+                    card = new Card(color, name, front, back);
+                    cards.add(card);
+                    break;
+            }
+        }
+    }
+
+    public Image loadImage(String imageName) {
+        Image img = new Image(ImgPath + imageName);
+        return img;
     }
 
     public static class Player {
 
-        private ArrayList<Card> cards;
+        private ArrayList<Card> cardsOnHand;
         private Coordinates currentLocation;
         private City currentCity;
         private String name;
         private boolean isHuman;
+        private Image image;
 
         public Player() {
             isHuman = false;
+            initHand();
+        }
+
+        public void initHand() {
+            for (int i = 0; i < 3; i++) {
+
+            }
         }
 
         public String getName() {
@@ -103,8 +249,8 @@ public class JTEGameData {
             return isHuman;
         }
 
-        public ArrayList<Card> getCards() {
-            return cards;
+        public ArrayList<Card> getCardsOnHand() {
+            return cardsOnHand;
         }
 
         public Coordinates getCurrentLocation() {
@@ -113,6 +259,14 @@ public class JTEGameData {
 
         public City getCurrentCity() {
             return currentCity;
+        }
+
+        public Image getImage() {
+            return image;
+        }
+
+        public void setImage(Image image) {
+            this.image = image;
         }
 
         public void setCurrentLocation(Coordinates c) {
@@ -136,10 +290,51 @@ public class JTEGameData {
         }
     }
 
-    private static class Card {
+    public static class Card {
+
         private Image front, back;
         private String color, name;
+
         public Card() {
+        }
+
+        public Card(String color, String name, Image front, Image back) {
+            this.color = color;
+            this.name = name;
+            this.front = front;
+            this.back = back;
+        }
+
+        public Image getFront() {
+            return front;
+        }
+
+        public Image getBack() {
+            return back;
+        }
+
+        public String getColor() {
+            return color;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setFront(Image front) {
+            this.front = front;
+        }
+
+        public void setBack(Image back) {
+            this.back = back;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public void setColor(String color) {
+            this.color = color;
         }
     }
 

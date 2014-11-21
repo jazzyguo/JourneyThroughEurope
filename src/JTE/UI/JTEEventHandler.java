@@ -15,6 +15,8 @@ import JTE.file.JTEFileLoader;
 import JTE.game.JTEGameData;
 import JTE.game.JTEGameData.City;
 import JTE.game.JTEGameStateManager;
+import static JTE.game.JTEGameStateManager.JTEGameState.GAME_IN_PROGRESS;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,7 +42,7 @@ import javafx.util.Duration;
 public class JTEEventHandler {
 
     private JTEUI ui;
-    private JTEGameData data;
+    public JTEGameData data;
 
     /**
      * Constructor that simply saves the ui for later.
@@ -67,11 +69,13 @@ public class JTEEventHandler {
      * This method responds to when the user presses the new game method.
      */
     public void respondToNewGameRequest() {
-        ui.initGameScreen();
-        data = new JTEGameData();
-        ui.setData(data);
-        data.setPlayers(ui.getPlayers());
         JTEGameStateManager gsm = ui.getGSM();
+        data = new JTEGameData();
+        ui.initGameScreen();
+        data.setUI(ui);
+        gsm.setData(data);
+        gsm.currentGameState = GAME_IN_PROGRESS;
+        data.setPlayers(ui.getPlayers());
         try {
             respondToSwitchScreenRequest(JTEUI.JTEUIState.PLAY_GAME_STATE);
         } catch (IOException ex) {
@@ -81,7 +85,6 @@ public class JTEEventHandler {
             System.out.println(data.getPlayers().get(i).getName());
             System.out.println(data.getPlayers().get(i).isHuman());
         }
-
     }
 
     public void respondToSwitchMapView(int currentMap, GraphicsContext gc, Image mapQuadrant) {
@@ -178,22 +181,17 @@ public class JTEEventHandler {
             if ((mouseX > citiesX - 5 && mouseX < citiesX + 5)
                     && (mouseY > citiesY - 5 && mouseY < citiesY + 5)
                     && (ui.getMap() == cities.get(i).getQuadrant())) {
-                System.out.println(cities.get(i).getName());
-                Stage dialogStage = new Stage();
-                dialogStage.initModality(Modality.WINDOW_MODAL);
-                BorderPane exitPane = new BorderPane();
-                Button cityButton = new Button();
-                cityButton.setText(cities.get(i).getName());
-                exitPane.setCenter(cityButton);
-                Scene scene = new Scene(exitPane, 250, 100);
-                dialogStage.setScene(scene);
-                dialogStage.show();
-                // WHAT'S THE USER'S DECISION?
-                cityButton.setOnAction(e -> {
-                    dialogStage.close();
-                });
+                HashMap<String, String[]> land = data.getCityLandNeighbors();
+                String[] lands = land.get(cities.get(i).getName());
+                for (int c = 0; c < lands.length; c++) {
+                    System.out.println(lands[c]);
+                }
+                HashMap<String, String[]> sea = data.getCitySeaNeighbors();
+                String[] seas = sea.get(cities.get(i).getName());
+                for (int c = 0; c < seas.length; c++) {
+                    System.out.println(seas[c]);
+                }
             }
         }
     }
-
 }

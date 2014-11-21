@@ -11,6 +11,7 @@ import properties_manager.PropertiesManager;
 
 import JTE.file.JTEFileLoader;
 import JTE.game.JTEGameData;
+import JTE.game.JTEGameData.Card;
 import JTE.game.JTEGameData.Player;
 import JTE.game.JTEGameStateManager;
 import java.awt.Dimension;
@@ -143,13 +144,15 @@ public class JTEUI extends Pane {
     // Image path
     private String ImgPath = "file:images/";
 
+    //cards
+    private ArrayList<Card> cards = new ArrayList();
+
     // THIS CLASS WILL HANDLE ALL ACTION EVENTS FOR THIS PROGRAM
     private JTEEventHandler eventHandler;
     private JTEErrorHandler errorHandler;
     private JTEDocumentManager docManager;
     private JTEGameStateManager gsm;
     private JTEFileLoader fileLoader;
-    private JTEGameData data;
 
     public JTEUI() {
         gsm = new JTEGameStateManager(this);
@@ -194,15 +197,7 @@ public class JTEUI extends Pane {
     public JTEFileLoader getFileLoader() {
         return fileLoader;
     }
-
-    public JTEGameData getData() {
-        return data;
-    }
-
-    public void setData(JTEGameData data) {
-        this.data = data;
-    }
-
+    
     public Stage getPrimaryStage() {
         return this.primaryStage;
     }
@@ -662,7 +657,7 @@ public class JTEUI extends Pane {
             @Override
             public void handle(ActionEvent event) {
                 currentMap = 1;
-                eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant1);             
+                eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant1);
             }
         });
         map2.setOnAction(new EventHandler<ActionEvent>() {
