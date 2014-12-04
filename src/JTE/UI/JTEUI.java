@@ -12,8 +12,13 @@ import properties_manager.PropertiesManager;
 import JTE.file.JTEFileLoader;
 import JTE.game.JTEGameData;
 import JTE.game.JTEGameData.Card;
+import JTE.game.JTEGameData.City;
+import JTE.game.JTEGameData.Coordinates;
+import JTE.game.JTEGameData.Die;
 import JTE.game.JTEGameData.Player;
 import JTE.game.JTEGameStateManager;
+import static JTE.game.JTEGameStateManager.JTEGameState.GAME_IN_PROGRESS;
+import static JTE.game.JTEGameStateManager.JTEGameState.GAME_OVER;
 import java.awt.Dimension;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -22,11 +27,13 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,7 +51,9 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
@@ -57,6 +66,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.DragEvent;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Border;
@@ -66,9 +76,12 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javax.swing.BorderFactory;
@@ -76,6 +89,8 @@ import javax.swing.BorderFactory;
 public class JTEUI extends Pane {
 
     private Stage primaryStage;
+    private Button diceButton;
+    private Text diceValue;
 
     public enum JTEUIState {
 
@@ -112,9 +127,14 @@ public class JTEUI extends Pane {
     private Button gameAbout;
     private Button save;
     private FlowPane leftPane;
-    private FlowPane rightPane;
+    private VBox rightPane;
     private FlowPane mapView;
     private int currentMap;
+    private Button endTurn;
+    Player currentPlayer;
+    private Text currentPlayerName;
+    Die die;
+    int currentRoll = -2;
 
     //GameHistory
     private JEditorPane gameHistoryPane;
@@ -174,6 +194,10 @@ public class JTEUI extends Pane {
         return mainPane;
     }
 
+    public Player getCurrentPlayer() {
+        return currentPlayer;
+    }
+
     public int getpaneWidth() {
         return paneWidth;
     }
@@ -197,7 +221,7 @@ public class JTEUI extends Pane {
     public JTEFileLoader getFileLoader() {
         return fileLoader;
     }
-    
+
     public Stage getPrimaryStage() {
         return this.primaryStage;
     }
@@ -214,7 +238,7 @@ public class JTEUI extends Pane {
         return numOfPlayers;
     }
 
-    public ArrayList getPlayers() {
+    public ArrayList<Player> getPlayers() {
         return players;
     }
 
@@ -405,7 +429,9 @@ public class JTEUI extends Pane {
         go.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                gsm.currentGameState = GAME_IN_PROGRESS;
                 eventHandler.respondToNewGameRequest();
+                playGame();
             }
         });
         selectPlayersNorthToolBar.getChildren().addAll(numPlayersText, numPlayers, go);
@@ -572,29 +598,26 @@ public class JTEUI extends Pane {
      * the user's requests.
      */
     public void initGameScreen() {
-        currentMap = 1;
+        die = eventHandler.data.getDie();
         gamePanel = new BorderPane();
         leftPane = new FlowPane(Orientation.VERTICAL);
         leftPane.resize(170, 640);
         leftPane.setStyle("-fx-background-color:orange");
-        Text currentPlayer = new Text();
-        currentPlayer.setText("Current Player");
-        leftPane.getChildren().add(currentPlayer);
-        rightPane = new FlowPane(Orientation.VERTICAL);
+        rightPane = new VBox();
         rightPane.resize(170, 640);
         rightPane.setStyle("-fx-background-color:orange");
         map = new Canvas();
-        map.setWidth(550);
+        map.setWidth(500);
         map.setHeight(640);
         gc = map.getGraphicsContext2D();
-        gc.drawImage(mapQuadrant1, 0, 0);
+        //rightPane.getChildren().add(dice);
         gamePanel.setCenter(map);
-        map.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                eventHandler.mouseClicked(event);
-            }
-        });
+        //map.setOnMouseClicked(new EventHandler<MouseEvent>() {
+        //  @Override
+        // public void handle(MouseEvent event) {
+        //     eventHandler.mouseClicked(event);
+        // }
+        // });
         gameAbout = new Button();
         gameAbout.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image aboutImage = loadImage("gameabout.png");
@@ -636,7 +659,18 @@ public class JTEUI extends Pane {
         ImageView saveImageView = new ImageView(saveImage);
         save.setGraphic(saveImageView);
         mapView = new FlowPane();
-        mapView.setPrefWrapLength(170);
+        mapView.setPrefWrapLength(160);
+        diceButton = new Button();
+        die.setRoll(6);
+        die.setImage();
+        ImageView diceImage = new ImageView(die.getImg());
+        diceButton.setGraphic(diceImage);
+        diceButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                diceAnimation();
+            }
+        });
         Button map1 = new Button();
         Image map1Image = loadImage("mapb1.jpg");
         ImageView map1ImageView = new ImageView(map1Image);
@@ -658,6 +692,9 @@ public class JTEUI extends Pane {
             public void handle(ActionEvent event) {
                 currentMap = 1;
                 eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant1);
+                if (currentPlayer.getQuadrant() == currentMap) {
+                    showRedLines();
+                }
             }
         });
         map2.setOnAction(new EventHandler<ActionEvent>() {
@@ -665,6 +702,9 @@ public class JTEUI extends Pane {
             public void handle(ActionEvent event) {
                 currentMap = 2;
                 eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant2);
+                if (currentPlayer.getQuadrant() == currentMap) {
+                    showRedLines();
+                }
             }
         });
         map3.setOnAction(new EventHandler<ActionEvent>() {
@@ -672,6 +712,9 @@ public class JTEUI extends Pane {
             public void handle(ActionEvent event) {
                 currentMap = 3;
                 eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant3);
+                if (currentPlayer.getQuadrant() == currentMap) {
+                    showRedLines();
+                }
             }
         });
         map4.setOnAction(new EventHandler<ActionEvent>() {
@@ -679,7 +722,9 @@ public class JTEUI extends Pane {
             public void handle(ActionEvent event) {
                 currentMap = 4;
                 eventHandler.respondToSwitchMapView(currentMap, gc, mapQuadrant4);
-
+                if (currentPlayer.getQuadrant() == currentMap) {
+                    showRedLines();
+                }
             }
         });
         Button quitButton = new Button();
@@ -694,14 +739,11 @@ public class JTEUI extends Pane {
                 eventHandler.respondToExitRequest(primaryStage);
             }
         });
+        diceValue = new Text();
         mapView.getChildren().addAll(map1, map2, map3, map4);
-        rightPane.getChildren().addAll(mapView, gameAbout, gameHistory, save, quitButton);
+        rightPane.getChildren().addAll(diceButton, diceValue, mapView, gameAbout, gameHistory, save, quitButton);
         gamePanel.setRight(rightPane);
         gamePanel.setLeft(leftPane);
-    }
-
-    public void repaint() {
-        gc = map.getGraphicsContext2D();
     }
 
     public Image loadImage(String imageName) {
@@ -756,4 +798,534 @@ public class JTEUI extends Pane {
         }
     }
 
+    public void moveAnimation(Coordinates currentLocation, City city) {
+        currentRoll--;
+        AnimationTimer timer = new AnimationTimer() {
+            int i = 0;
+            long previous = -1;
+            double currentX = currentLocation.getX();
+            double currentY = currentLocation.getY();
+            double destX = city.getCoordinates().getX();
+            double destY = city.getCoordinates().getY();
+            double differenceX = (city.getCoordinates().getX() - currentLocation.getX()) / 100;
+            double differenceY = (city.getCoordinates().getY() - currentLocation.getY()) / 100;
+
+            @Override
+            public void handle(long now) {
+
+                if (i == 100) {
+                    stop();
+                }
+                if (previous == -1) {
+                    previous = now;
+                }
+                if (now - previous > 100000000) {
+                    gc.clearRect(0, 0, 550, 640);
+                    currentX = currentX + differenceX;
+                    currentY = currentY + differenceY;
+                    currentPlayer.setCurrentLocation(new Coordinates(currentX, currentY));
+                    currentPlayer.setCurrentCity(city.getName());
+                    drawPlayers();
+                    showPlayerQuadrant();
+                    showRedLines();
+                    i++;
+                }
+            }
+        };
+        timer.start();
+    }
+
+    public void moveToQuadrant(Coordinates currentLocation, City city) {
+        currentRoll--;
+        currentPlayer.setCurrentLocation(city.getCoordinates());
+        currentPlayer.setCurrentCity(city.getName());
+        currentPlayer.setQuadrant(city.getQuadrant());
+        drawPlayers();
+        showPlayerQuadrant();
+        showRedLines();
+    }
+
+    public void drawTempPlayers() {
+        for (JTEGameData.Player player : eventHandler.data.getPlayers()) {
+            if (player.getQuadrant() == currentMap) {
+                gc.drawImage(player.getImage(), player.getTempLocation().getX() - 25,
+                        player.getTempLocation().getY() - 45, 50, 50);
+                if (player.getHomeQ() == currentMap) {
+                    gc.drawImage(player.getFlag(), player.getHomeLocation().getX() - 21,
+                            player.getHomeLocation().getY() - 45, 50, 50);
+                }
+            }
+        }
+    }
+
+    public void drawPlayers() {
+        for (JTEGameData.Player player : eventHandler.data.getPlayers()) {
+            if (player.getQuadrant() == currentMap) {
+                gc.drawImage(player.getImage(), player.getCurrentLocation().getX() - 25,
+                        player.getCurrentLocation().getY() - 45, 50, 50);
+                if (player.getHomeQ() == currentMap) {
+                    gc.drawImage(player.getFlag(), player.getHomeLocation().getX() - 21,
+                            player.getHomeLocation().getY() - 45, 50, 50);
+                }
+            }
+        }
+    }
+
+    public void diceAnimation() {
+        AnimationTimer timer = new AnimationTimer() {
+            int i = 0;
+
+            @Override
+            public void handle(long now) {
+                if (i < 20) {
+                    die.roll();
+                    die.setImage();
+                    ImageView diceImage = new ImageView(die.getImg());
+                    diceButton.setGraphic(diceImage);
+                    i++;
+                }
+                if (i == 20) {
+                    stop();
+                    currentRoll = die.getRoll();
+                    diceButton.setDisable(true);
+                    diceValue.setText("Current Points: " + currentRoll);
+                }
+            }
+        };
+        timer.start();
+    }
+
+    public void playGame() {
+        currentPlayer = players.get(0);
+        endTurn = new Button();
+        endTurn.setText("End Turn");
+        leftPane.getChildren().add(endTurn);
+        currentPlayerName = new Text();
+        currentPlayerName.setText(currentPlayer.getName());
+        leftPane.getChildren().add(currentPlayerName);
+        showPlayerQuadrant();
+        showCards();
+        showRedLines();
+        map.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                if (currentRoll > 0) {
+                    eventHandler.moveTo(event, currentPlayer, gc);
+                    diceValue.setText("Current Points: " + currentRoll);
+                    showCards();
+                }
+                if (currentRoll == 0) {
+                    diceValue.setText("End of Turn.");
+                }
+                if (currentRoll == -2) {
+                    diceValue.setText("Roll the dice.");
+                }
+            }
+        });
+        map.setOnMouseDragged(new EventHandler<MouseEvent>() {
+            public void handle(MouseEvent event) {
+                Coordinates temp = new Coordinates(event.getX(), event.getY());
+                currentPlayer.setTempLocation(temp);
+                gc.clearRect(0, 0, 550, 640);
+                showPlayerQuadrant();
+                drawTempPlayers();
+                showRedLines();
+                if (currentRoll == 0) {
+                    diceValue.setText("End of Turn.");
+                }
+                if (currentRoll == -2) {
+                    diceValue.setText("Roll the dice.");
+                }
+                map.setOnMouseReleased(new EventHandler<MouseEvent>() {
+                    @Override
+                    public void handle(MouseEvent event) {
+                        gc.clearRect(0, 0, 550, 640);
+                        showPlayerQuadrant();
+                        drawPlayers();
+                        showRedLines();
+                    }
+                });
+            }
+        });
+
+        map.setOnDragOver(new EventHandler<DragEvent>() {
+            @Override
+            public void handle(DragEvent event) {
+                if (currentRoll > 0) {
+                    eventHandler.dragged(event, currentPlayer, gc);
+                    diceValue.setText("Current Points: " + currentRoll);
+                    showCards();
+                }
+                if (currentRoll == 0) {
+                    diceValue.setText("End of Turn.");
+                }
+                if (currentRoll == -2) {
+                    diceValue.setText("Roll the dice.");
+                }
+            }
+        });
+        endTurn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                int playerTurn = currentPlayer.getNum();
+                if (eventHandler.data.getPlayers().size() == 1) {
+                    switch (playerTurn) {
+                        case 1:
+                            currentPlayer = eventHandler.data.getPlayers().get(0);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                    }
+                }
+                if (eventHandler.data.getPlayers().size() == 2) {
+                    switch (playerTurn) {
+                        case 1:
+                            currentPlayer = eventHandler.data.getPlayers().get(1);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 2:
+                            currentPlayer = eventHandler.data.getPlayers().get(0);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                    }
+                }
+                if (eventHandler.data.getPlayers().size() == 3) {
+                    switch (playerTurn) {
+                        case 1:
+                            currentPlayer = eventHandler.data.getPlayers().get(1);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 2:
+                            currentPlayer = eventHandler.data.getPlayers().get(2);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 3:
+                            currentPlayer = eventHandler.data.getPlayers().get(0);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                    }
+                }
+                if (eventHandler.data.getPlayers().size() == 4) {
+                    switch (playerTurn) {
+                        case 1:
+                            currentPlayer = eventHandler.data.getPlayers().get(1);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 2:
+                            currentPlayer = eventHandler.data.getPlayers().get(2);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 3:
+                            currentPlayer = eventHandler.data.getPlayers().get(3);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 4:
+                            currentPlayer = eventHandler.data.getPlayers().get(0);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                    }
+                }
+                if (eventHandler.data.getPlayers().size() == 5) {
+                    switch (playerTurn) {
+                        case 1:
+                            currentPlayer = eventHandler.data.getPlayers().get(1);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 2:
+                            currentPlayer = eventHandler.data.getPlayers().get(2);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 3:
+                            currentPlayer = eventHandler.data.getPlayers().get(3);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 4:
+                            currentPlayer = eventHandler.data.getPlayers().get(4);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 5:
+                            currentPlayer = eventHandler.data.getPlayers().get(0);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                    }
+                }
+                if (eventHandler.data.getPlayers().size() == 6) {
+                    switch (playerTurn) {
+                        case 1:
+                            currentPlayer = eventHandler.data.getPlayers().get(1);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 2:
+                            currentPlayer = eventHandler.data.getPlayers().get(2);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 3:
+                            currentPlayer = eventHandler.data.getPlayers().get(3);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 4:
+                            currentPlayer = eventHandler.data.getPlayers().get(4);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 5:
+                            currentPlayer = eventHandler.data.getPlayers().get(5);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                        case 6:
+                            currentPlayer = eventHandler.data.getPlayers().get(0);
+                            currentPlayerName.setText(currentPlayer.getName());
+                            showCards();
+                            enableDice();
+                            showPlayerQuadrant();
+                            showRedLines();
+                            if (!currentPlayer.isHuman()) {
+                                computerMove();
+                            }
+                            break;
+                    }
+                }
+            }
+        });
+        if (!currentPlayer.isHuman()) {
+            computerMove();
+        }
+    }
+
+    public void computerMove() {
+        diceButton.fire();
+    }
+
+    public void showRedLines() {
+        ArrayList<String> availableCities = new ArrayList();
+        if (eventHandler.data.getCityLandNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+            availableCities.addAll(Arrays.asList(eventHandler.data.getCityLandNeighbors().get(currentPlayer.getCurrentCity())));
+        }
+        if (eventHandler.data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+            availableCities.addAll(Arrays.asList(eventHandler.data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity())));
+        }
+        for (String string : availableCities) {
+            for (City city : eventHandler.data.getCities()) {
+                if (city.getName().equals(string) && currentPlayer.getQuadrant() == city.getQuadrant()) {
+                    gc.setStroke(Color.RED);
+                    gc.setLineWidth(5);
+                    gc.strokeLine(currentPlayer.getCurrentLocation().getX(), currentPlayer.getCurrentLocation().getY(),
+                            city.getCoordinates().getX(), city.getCoordinates().getY());
+                }
+            }
+        }
+    }
+
+    public void showPlayerQuadrant() {
+        int currentPlayerQ = currentPlayer.getQuadrant();
+        currentMap = currentPlayerQ;
+        switch (currentPlayerQ) {
+            case 1:
+                currentMap = 1;
+                gc.drawImage(mapQuadrant1, 0, 0);
+                drawPlayers();
+                break;
+            case 2:
+                currentMap = 2;
+                gc.drawImage(mapQuadrant2, 0, 0);
+                drawPlayers();
+                break;
+            case 3:
+                currentMap = 3;
+                gc.drawImage(mapQuadrant3, 0, 0);
+                drawPlayers();
+                break;
+            case 4:
+                currentMap = 4;
+                gc.drawImage(mapQuadrant4, 0, 0);
+                drawPlayers();
+                break;
+        }
+    }
+
+    public void enableDice() {
+        currentRoll = -2;
+        diceButton.setDisable(false);
+    }
+
+    public void showCards() {
+        leftPane.getChildren().clear();
+        leftPane.getChildren().add(currentPlayerName);
+        leftPane.getChildren().add(endTurn);
+        for (int i = 0; i < currentPlayer.getCardsOnHand().size(); i++) {
+            Button button = new Button();
+            button.setId("" + i + "");
+            ImageView iv2 = new ImageView();
+            button.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    Stage dialogStage = new Stage();
+                    dialogStage.initModality(Modality.WINDOW_MODAL);
+                    dialogStage.initOwner(primaryStage);
+                    Pane pane = new Pane();
+                    Button back = new Button();
+                    ImageView iv = new ImageView();
+                    iv.setImage(currentPlayer.getCardsOnHand().get(Integer.parseInt(button.getId())).getBack());
+                    iv.setFitWidth(250);
+                    iv.setPreserveRatio(true);
+                    iv.setSmooth(true);
+                    iv.setCache(true);
+                    back.setGraphic(iv);
+                    pane.getChildren().add(back);
+                    Scene scene = new Scene(pane, 250, 365);
+                    dialogStage.setScene(scene);
+                    dialogStage.show();
+                }
+            });
+            if (currentPlayer.getCurrentCity().equals(currentPlayer.getCardsOnHand().get(i).getName())
+                    && !currentPlayer.getHome().equals(currentPlayer.getCardsOnHand().get(i).getName())) {
+                button.setDisable(true);
+            }
+            iv2.setImage(currentPlayer.getCardsOnHand().get(i).getFront());
+            iv2.setFitWidth(110);
+            iv2.setPreserveRatio(true);
+            iv2.setSmooth(true);
+            iv2.setCache(true);
+            button.setGraphic(iv2);
+            leftPane.getChildren().add(button);
+        }
+    }
 }

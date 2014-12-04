@@ -14,8 +14,12 @@ import properties_manager.PropertiesManager;
 import JTE.file.JTEFileLoader;
 import JTE.game.JTEGameData;
 import JTE.game.JTEGameData.City;
+import JTE.game.JTEGameData.Die;
+import JTE.game.JTEGameData.Player;
 import JTE.game.JTEGameStateManager;
 import static JTE.game.JTEGameStateManager.JTEGameState.GAME_IN_PROGRESS;
+import static JTE.game.JTEGameStateManager.JTEGameState.GAME_OVER;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,6 +35,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.input.DragEvent;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -70,12 +75,9 @@ public class JTEEventHandler {
      */
     public void respondToNewGameRequest() {
         JTEGameStateManager gsm = ui.getGSM();
-        data = new JTEGameData();
+        data = new JTEGameData(ui);
         ui.initGameScreen();
-        data.setUI(ui);
         gsm.setData(data);
-        gsm.currentGameState = GAME_IN_PROGRESS;
-        data.setPlayers(ui.getPlayers());
         try {
             respondToSwitchScreenRequest(JTEUI.JTEUIState.PLAY_GAME_STATE);
         } catch (IOException ex) {
@@ -92,18 +94,58 @@ public class JTEEventHandler {
             case 1:
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant, 0, 0);
+                for (JTEGameData.Player player : data.getPlayers()) {
+                    if (player.getQuadrant() == currentMap) {
+                        gc.drawImage(player.getImage(), player.getCurrentLocation().getX() - 25,
+                                player.getCurrentLocation().getY() - 45, 50, 50);
+                        if (player.getHomeQ() == currentMap) {
+                            gc.drawImage(player.getFlag(), player.getHomeLocation().getX() - 21,
+                                    player.getHomeLocation().getY() - 45, 50, 50);
+                        }
+                    }
+                }
                 break;
             case 2:
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant, 0, 0);
+                for (JTEGameData.Player player : data.getPlayers()) {
+                    if (player.getQuadrant() == currentMap) {
+                        gc.drawImage(player.getImage(), player.getCurrentLocation().getX() - 25,
+                                player.getCurrentLocation().getY() - 45, 50, 50);
+                        if (player.getHomeQ() == currentMap) {
+                            gc.drawImage(player.getFlag(), player.getHomeLocation().getX() - 21,
+                                    player.getHomeLocation().getY() - 45, 50, 50);
+                        }
+                    }
+                }
                 break;
             case 3:
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant, 0, 0);
+                for (JTEGameData.Player player : data.getPlayers()) {
+                    if (player.getQuadrant() == currentMap) {
+                        gc.drawImage(player.getImage(), player.getCurrentLocation().getX() - 25,
+                                player.getCurrentLocation().getY() - 45, 50, 50);
+                        if (player.getHomeQ() == currentMap) {
+                            gc.drawImage(player.getFlag(), player.getHomeLocation().getX() - 21,
+                                    player.getHomeLocation().getY() - 45, 50, 50);
+                        }
+                    }
+                }
                 break;
             case 4:
                 gc.clearRect(0, 0, 550, 640);
                 gc.drawImage(mapQuadrant, 0, 0);
+                for (JTEGameData.Player player : data.getPlayers()) {
+                    if (player.getQuadrant() == currentMap) {
+                        gc.drawImage(player.getImage(), player.getCurrentLocation().getX() - 25,
+                                player.getCurrentLocation().getY() - 45, 50, 50);
+                        if (player.getHomeQ() == currentMap) {
+                            gc.drawImage(player.getFlag(), player.getHomeLocation().getX() - 21,
+                                    player.getHomeLocation().getY() - 45, 50, 50);
+                        }
+                    }
+                }
                 break;
         }
     }
@@ -169,7 +211,7 @@ public class JTEEventHandler {
         });
     }
 
-    void mouseClicked(MouseEvent event) {
+    public void mouseClicked(MouseEvent event) {
         ArrayList<City> cities = data.getCities();
         double mouseX = event.getX();
         double mouseY = event.getY();
@@ -181,6 +223,7 @@ public class JTEEventHandler {
             if ((mouseX > citiesX - 5 && mouseX < citiesX + 5)
                     && (mouseY > citiesY - 5 && mouseY < citiesY + 5)
                     && (ui.getMap() == cities.get(i).getQuadrant())) {
+                City clickedCity = cities.get(i);
                 HashMap<String, String[]> land = data.getCityLandNeighbors();
                 String[] lands = land.get(cities.get(i).getName());
                 for (int c = 0; c < lands.length; c++) {
@@ -190,6 +233,68 @@ public class JTEEventHandler {
                 String[] seas = sea.get(cities.get(i).getName());
                 for (int c = 0; c < seas.length; c++) {
                     System.out.println(seas[c]);
+                }
+            }
+        }
+    }
+
+    public void moveTo(MouseEvent event, Player currentPlayer, GraphicsContext gc) {
+        ArrayList<String> availableCities = new ArrayList();
+        if (data.getCityLandNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+            availableCities.addAll(Arrays.asList(data.getCityLandNeighbors().get(currentPlayer.getCurrentCity())));
+        }
+        if (data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+            availableCities.addAll(Arrays.asList(data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity())));
+        }
+        ArrayList<City> cities = data.getCities();
+        double mouseX = event.getX();
+        double mouseY = event.getY();
+        System.out.println(mouseX + "," + mouseY);
+        int n = cities.size();
+        for (int i = 0; i < n; i++) {
+            double citiesX = cities.get(i).getCoordinates().getX();
+            double citiesY = cities.get(i).getCoordinates().getY();
+            if ((mouseX > citiesX - 10 && mouseX < citiesX + 10)
+                    && (mouseY > citiesY - 10 && mouseY < citiesY + 10)
+                    && (ui.getMap() == cities.get(i).getQuadrant())) {
+                City clickedCity = cities.get(i);
+                if (availableCities.contains(clickedCity.getName())) {
+                    System.out.println("valid city");
+                    if (currentPlayer.getQuadrant() == clickedCity.getQuadrant()) {
+                        ui.moveAnimation(currentPlayer.getCurrentLocation(), clickedCity);
+                    } else {
+                        ui.moveToQuadrant(currentPlayer.getCurrentLocation(), clickedCity);
+                    }
+                }
+            }
+        }
+    }
+
+    public void dragged(DragEvent event, Player currentPlayer, GraphicsContext gc) {
+        ArrayList<String> availableCities = new ArrayList();
+        if (data.getCityLandNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+            availableCities.addAll(Arrays.asList(data.getCityLandNeighbors().get(currentPlayer.getCurrentCity())));
+        }
+        if (data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+            availableCities.addAll(Arrays.asList(data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity())));
+        }
+        ArrayList<City> cities = data.getCities();
+        double mouseX = event.getX();
+        double mouseY = event.getY();
+        System.out.println(mouseX + "," + mouseY);
+        int n = cities.size();
+        for (int i = 0; i < n; i++) {
+            double citiesX = cities.get(i).getCoordinates().getX();
+            double citiesY = cities.get(i).getCoordinates().getY();
+            if ((mouseX > citiesX - 10 && mouseX < citiesX + 10)
+                    && (mouseY > citiesY - 10 && mouseY < citiesY + 10)
+                    && (ui.getMap() == cities.get(i).getQuadrant())) {
+                City clickedCity = cities.get(i);
+                if (availableCities.contains(clickedCity.getName())) {
+                    System.out.println("valid city");
+                    if (currentPlayer.getQuadrant() == clickedCity.getQuadrant()) {
+                        ui.moveToQuadrant(currentPlayer.getCurrentLocation(), clickedCity);
+                    }
                 }
             }
         }

@@ -15,6 +15,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Random;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -27,23 +28,32 @@ public class JTEGameData {
 
     private ArrayList<City> cities;
     private ArrayList<Player> players;
-    private ArrayList<Card> cards;
+    private static ArrayList<Card> cards;
     private HashMap<String, String[]> cityLandNeighbors;
     private HashMap<String, String[]> citySeaNeighbors;
     private String ImgPath = "file:images/";
     private JTEUI ui;
+    private Die die;
     /*
      * Construct this object when a game begins.
      */
 
-    public JTEGameData() {
+    public JTEGameData(JTEUI initUI) {
+        ui = initUI;
+        die = new Die();
         cities = new ArrayList<>();
         cards = new ArrayList<>();
+        players = new ArrayList<>();
         cityLandNeighbors = new HashMap<String, String[]>();
         citySeaNeighbors = new HashMap<String, String[]>();
         initCities("cities.txt");
         initCityNeighbors("city_neighbor.txt", "sea_neighbor.txt");
         initCards();
+        initPlayerPlaceCard();
+    }
+
+    public Die getDie() {
+        return die;
     }
 
     public ArrayList<City> getCities() {
@@ -68,10 +78,6 @@ public class JTEGameData {
 
     public void setPlayers(ArrayList<Player> players) {
         this.players = players;
-    }
-
-    public void setUI(JTEUI ui) {
-        this.ui = ui;
     }
 
     private void initCities(String csvFile) {
@@ -148,6 +154,7 @@ public class JTEGameData {
             switch (color) {
                 case "red":
                     frontString = "red/" + city.getName() + ".jpg";
+                    backString = "";
                     System.out.println(frontString);
                     f = new File("images/red/" + city.getName() + "_I.jpg");
                     p = new File("images/red/" + city.getName() + "_I.png");
@@ -160,16 +167,18 @@ public class JTEGameData {
                         backString = "red/" + city.getName() + "_I.png";
                         System.out.println(backString);
                         back = loadImage(backString);
-                    } else {
+                    }
+                    if (!p.exists() && !f.exists()) {
                         backString = frontString;
                     }
                     front = loadImage(frontString);
-                    back = loadImage(frontString);
+                    back = loadImage(backString);
                     card = new Card(color, name, front, back);
                     cards.add(card);
                     break;
                 case "green":
                     frontString = "green/" + city.getName() + ".jpg";
+                    backString = "";
                     System.out.println(frontString);
                     f = new File("images/green/" + city.getName() + "_I.jpg");
                     p = new File("images/green/" + city.getName() + "_I.png");
@@ -182,16 +191,18 @@ public class JTEGameData {
                         backString = "green/" + city.getName() + "_I.png";
                         System.out.println(backString);
                         back = loadImage(backString);
-                    } else {
+                    }
+                    if (!p.exists() && !f.exists()) {
                         backString = frontString;
                     }
                     front = loadImage(frontString);
-                    back = loadImage(frontString);
+                    back = loadImage(backString);
                     card = new Card(color, name, front, back);
                     cards.add(card);
                     break;
                 case "yellow":
                     frontString = "yellow/" + city.getName() + ".jpg";
+                    backString = "";
                     System.out.println(frontString);
                     f = new File("images/yellow/" + city.getName() + "_I.jpg");
                     p = new File("images/yellow/" + city.getName() + "_I.png");
@@ -204,13 +215,124 @@ public class JTEGameData {
                         backString = "yellow/" + city.getName() + "_I.png";
                         System.out.println(backString);
                         back = loadImage(backString);
-                    } else {
+                    }
+                    if (!p.exists() && !f.exists()) {
                         backString = frontString;
                     }
                     front = loadImage(frontString);
-                    back = loadImage(frontString);
+                    back = loadImage(backString);
                     card = new Card(color, name, front, back);
                     cards.add(card);
+                    break;
+            }
+        }
+    }
+
+    private void initPlayerPlaceCard() {
+        players = ui.getPlayers();
+        for (int i = 0; i < players.size(); i++) {
+            switch (i) {
+                case 0:
+                    players.get(i).getRedCard();
+                    players.get(i).setImage(loadImage("p1.png"));
+                    players.get(i).setFlag(loadImage("1.png"));
+                    players.get(i).setNum(1);
+                    players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
+                    players.get(i).initHand();
+                    for (City city : cities) {
+                        if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
+                            players.get(i).setCurrentLocation(city.getCoordinates());
+                            players.get(i).setHomeLocation(city.getCoordinates());
+                            players.get(i).setQuadrant(city.getQuadrant());
+                            players.get(i).setHomeQ(city.getQuadrant());
+                            players.get(i).setHome(city.getName());
+                        }
+                    }
+                    break;
+                case 1:
+                    players.get(i).getGreenCard();
+                    players.get(i).setImage(loadImage("p2.png"));
+                    players.get(i).setFlag(loadImage("2.png"));
+                    players.get(i).setNum(2);
+                    players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
+                    players.get(i).initHand();
+                    for (City city : cities) {
+                        if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
+                            players.get(i).setCurrentLocation(city.getCoordinates());
+                            players.get(i).setHomeLocation(city.getCoordinates());
+                            players.get(i).setQuadrant(city.getQuadrant());
+                            players.get(i).setHome(city.getName());
+                            players.get(i).setHomeQ(city.getQuadrant());
+                        }
+                    }
+                    break;
+                case 2:
+                    players.get(i).getYellowCard();
+                    players.get(i).setImage(loadImage("p3.png"));
+                    players.get(i).setFlag(loadImage("3.png"));
+                    players.get(i).setNum(3);
+                    players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
+                    players.get(i).initHand();
+                    for (City city : cities) {
+                        if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
+                            players.get(i).setCurrentLocation(city.getCoordinates());
+                            players.get(i).setHomeLocation(city.getCoordinates());
+                            players.get(i).setQuadrant(city.getQuadrant());
+                            players.get(i).setHome(city.getName());
+                            players.get(i).setHomeQ(city.getQuadrant());
+                        }
+                    }
+                    break;
+                case 3:
+                    players.get(i).getRedCard();
+                    players.get(i).setImage(loadImage("p4.png"));
+                    players.get(i).setFlag(loadImage("4.png"));
+                    players.get(i).setNum(4);
+                    players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
+                    players.get(i).initHand();
+                    for (City city : cities) {
+                        if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
+                            players.get(i).setCurrentLocation(city.getCoordinates());
+                            players.get(i).setHomeLocation(city.getCoordinates());
+                            players.get(i).setHome(city.getName());
+                            players.get(i).setQuadrant(city.getQuadrant());
+                            players.get(i).setHomeQ(city.getQuadrant());
+                        }
+                    }
+                    break;
+                case 4:
+                    players.get(i).getGreenCard();
+                    players.get(i).setImage(loadImage("p5.png"));
+                    players.get(i).setFlag(loadImage("5.png"));
+                    players.get(i).setNum(5);
+                    players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
+                    players.get(i).initHand();
+                    for (City city : cities) {
+                        if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
+                            players.get(i).setCurrentLocation(city.getCoordinates());
+                            players.get(i).setHomeLocation(city.getCoordinates());
+                            players.get(i).setQuadrant(city.getQuadrant());
+                            players.get(i).setHome(city.getName());
+                            players.get(i).setHomeQ(city.getQuadrant());
+                        }
+                    }
+                    break;
+                case 5:
+                    players.get(i).getYellowCard();
+                    players.get(i).setImage(loadImage("p6.png"));
+                    players.get(i).setFlag(loadImage("6.png"));
+                    players.get(i).setNum(6);
+                    players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
+                    players.get(i).initHand();
+                    for (City city : cities) {
+                        if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
+                            players.get(i).setCurrentLocation(city.getCoordinates());
+                            players.get(i).setHomeLocation(city.getCoordinates());
+                            players.get(i).setQuadrant(city.getQuadrant());
+                            players.get(i).setHome(city.getName());
+                            players.get(i).setHomeQ(city.getQuadrant());
+                        }
+                    }
                     break;
             }
         }
@@ -221,24 +343,145 @@ public class JTEGameData {
         return img;
     }
 
+    public final class Die {
+
+        private int roll;
+        private Image img;
+
+        public Die() {
+        }
+
+        public void roll() {
+            Random rand = new Random();
+            roll = rand.nextInt((6 - 1) + 1) + 1;
+        }
+
+        public int getRoll() {
+            return roll;
+        }
+
+        public void setRoll(int roll) {
+            this.roll = roll;
+        }
+
+        public Image getImg() {
+            return img;
+        }
+
+        public void setImage() {
+            switch (roll) {
+                case 1:
+                    img = loadImage("die_1.jpg");
+                    break;
+                case 2:
+                    img = loadImage("die_2.jpg");
+                    break;
+                case 3:
+                    img = loadImage("die_3.jpg");
+                    break;
+                case 4:
+                    img = loadImage("die_4.jpg");
+                    break;
+                case 5:
+                    img = loadImage("die_5.jpg");
+                    break;
+                case 6:
+                    img = loadImage("die_6.jpg");
+                    break;
+            }
+        }
+    }
+
     public static class Player {
 
         private ArrayList<Card> cardsOnHand;
-        private Coordinates currentLocation;
-        private City currentCity;
+        private Coordinates currentLocation, tempLocation;
+        private Coordinates homeLocation;
+        private String currentCity, home;
         private String name;
         private boolean isHuman;
-        private Image image;
+        private Image image, flag;
+        private int quadrant, num, homeQuadrant;
+        private Die die;
+        private boolean turn;
 
         public Player() {
             isHuman = false;
-            initHand();
+            cardsOnHand = new ArrayList<>();
+            currentLocation = new Coordinates();
+            tempLocation = new Coordinates();
+            turn = false;
+        }
+
+        public int getHomeQ() {
+            return homeQuadrant;
+        }
+
+        public void setHomeQ(int q) {
+            homeQuadrant = q;
+        }
+
+        public String getHome() {
+            return home;
+        }
+
+        public boolean isTurn() {
+            return turn;
+        }
+
+        public int getQuadrant() {
+            return quadrant;
+        }
+
+        public int getNum() {
+            return num;
         }
 
         public void initHand() {
-            for (int i = 0; i < 3; i++) {
-
+            if (cardsOnHand.get(0).getColor().equals("green")) {
+                getRedCard();
+                getYellowCard();
             }
+            if (cardsOnHand.get(0).getColor().equals("red")) {
+                getGreenCard();
+                getYellowCard();
+            }
+            if (cardsOnHand.get(0).getColor().equals("yellow")) {
+                getRedCard();
+                getGreenCard();
+            }
+        }
+
+        public void setQuadrant(int q) {
+            quadrant = q;
+        }
+
+        public void setNum(int n) {
+            num = n;
+        }
+
+        public void getRedCard() {
+            int i = (int) (Math.random() * 180);
+            while (!cards.get(i).getColor().equals("red")) {
+                i = (int) (Math.random() * 180);
+            }
+            cardsOnHand.add(cards.get(i));
+        }
+
+        public void getGreenCard() {
+            int i = (int) (Math.random() * 180);
+            while (!cards.get(i).getColor().equals("green")) {
+                i = (int) (Math.random() * 180);
+            }
+            cardsOnHand.add(cards.get(i));
+        }
+
+        public void getYellowCard() {
+            int i = (int) (Math.random() * 180);
+            while (!cards.get(i).getColor().equals("yellow")) {
+                i = (int) (Math.random() * 180);
+            }
+            cardsOnHand.add(cards.get(i));
         }
 
         public String getName() {
@@ -249,6 +492,10 @@ public class JTEGameData {
             return isHuman;
         }
 
+        public void setHome(String home) {
+            this.home = home;
+        }
+
         public ArrayList<Card> getCardsOnHand() {
             return cardsOnHand;
         }
@@ -256,8 +503,17 @@ public class JTEGameData {
         public Coordinates getCurrentLocation() {
             return currentLocation;
         }
+        public Coordinates getTempLocation(){
+            return tempLocation;
+        }
+        public void setTempLocation(Coordinates temp){
+            this.tempLocation = temp;
+        }
+        public Coordinates getHomeLocation() {
+            return homeLocation;
+        }
 
-        public City getCurrentCity() {
+        public String getCurrentCity() {
             return currentCity;
         }
 
@@ -269,11 +525,23 @@ public class JTEGameData {
             this.image = image;
         }
 
+        public Image getFlag() {
+            return flag;
+        }
+
+        public void setFlag(Image flag) {
+            this.flag = flag;
+        }
+
         public void setCurrentLocation(Coordinates c) {
             currentLocation = c;
         }
 
-        public void setCurrentCity(City c) {
+        public void setHomeLocation(Coordinates c) {
+            homeLocation = c;
+        }
+
+        public void setCurrentCity(String c) {
             currentCity = c;
         }
 
@@ -287,6 +555,14 @@ public class JTEGameData {
 
         public void setComputer() {
             isHuman = false;
+        }
+
+        public void setTurnEnd() {
+            turn = false;
+        }
+
+        public void setTurn() {
+            turn = true;
         }
     }
 
@@ -338,7 +614,7 @@ public class JTEGameData {
         }
     }
 
-    public class City {
+    public static class City {
 
         String name, color;
         Coordinates cityCoordinates;
@@ -399,7 +675,7 @@ public class JTEGameData {
         }
     }
 
-    public class Coordinates {
+    public static class Coordinates {
 
         private double X;
         private double Y;
