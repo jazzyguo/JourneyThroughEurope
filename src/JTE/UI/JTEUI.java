@@ -166,6 +166,7 @@ public class JTEUI extends Pane {
 
     //cards
     private ArrayList<Card> cards = new ArrayList();
+    private Button[][] cardButtons;
 
     // THIS CLASS WILL HANDLE ALL ACTION EVENTS FOR THIS PROGRAM
     private JTEEventHandler eventHandler;
@@ -807,13 +808,13 @@ public class JTEUI extends Pane {
             double currentY = currentLocation.getY();
             double destX = city.getCoordinates().getX();
             double destY = city.getCoordinates().getY();
-            double differenceX = (city.getCoordinates().getX() - currentLocation.getX()) / 100;
-            double differenceY = (city.getCoordinates().getY() - currentLocation.getY()) / 100;
+            double differenceX = (city.getCoordinates().getX() - currentLocation.getX()) / 60;
+            double differenceY = (city.getCoordinates().getY() - currentLocation.getY()) / 60;
 
             @Override
             public void handle(long now) {
 
-                if (i == 100) {
+                if (i == 60) {
                     stop();
                 }
                 if (previous == -1) {
@@ -846,14 +847,12 @@ public class JTEUI extends Pane {
     }
 
     public void drawTempPlayers() {
-        for (JTEGameData.Player player : eventHandler.data.getPlayers()) {
-            if (player.getQuadrant() == currentMap) {
-                gc.drawImage(player.getImage(), player.getTempLocation().getX() - 25,
-                        player.getTempLocation().getY() - 45, 50, 50);
-                if (player.getHomeQ() == currentMap) {
-                    gc.drawImage(player.getFlag(), player.getHomeLocation().getX() - 21,
-                            player.getHomeLocation().getY() - 45, 50, 50);
-                }
+        if (currentPlayer.getQuadrant() == currentMap) {
+            gc.drawImage(currentPlayer.getImage(), currentPlayer.getTempLocation().getX() - 25,
+                    currentPlayer.getTempLocation().getY() - 45, 50, 50);
+            if (currentPlayer.getHomeQ() == currentMap) {
+                gc.drawImage(currentPlayer.getFlag(), currentPlayer.getHomeLocation().getX() - 21,
+                        currentPlayer.getHomeLocation().getY() - 45, 50, 50);
             }
         }
     }
@@ -896,6 +895,7 @@ public class JTEUI extends Pane {
     }
 
     public void playGame() {
+        cardButtons = new Button[players.size()][10];
         currentPlayer = players.get(0);
         endTurn = new Button();
         endTurn.setText("End Turn");
@@ -927,9 +927,11 @@ public class JTEUI extends Pane {
                 Coordinates temp = new Coordinates(event.getX(), event.getY());
                 currentPlayer.setTempLocation(temp);
                 gc.clearRect(0, 0, 550, 640);
-                showPlayerQuadrant();
+                drawMapQuadrant();
                 drawTempPlayers();
-                showRedLines();
+                if (currentMap == currentPlayer.getQuadrant()) {
+                    showRedLines();
+                }
                 if (currentRoll == 0) {
                     diceValue.setText("End of Turn.");
                 }
@@ -940,9 +942,11 @@ public class JTEUI extends Pane {
                     @Override
                     public void handle(MouseEvent event) {
                         gc.clearRect(0, 0, 550, 640);
-                        showPlayerQuadrant();
+                        drawMapQuadrant();
                         drawPlayers();
-                        showRedLines();
+                        if (currentMap == currentPlayer.getQuadrant()) {
+                            showRedLines();
+                        }
                     }
                 });
             }
@@ -1232,6 +1236,7 @@ public class JTEUI extends Pane {
 
     public void computerMove() {
         diceButton.fire();
+        
     }
 
     public void showRedLines() {
@@ -1251,6 +1256,27 @@ public class JTEUI extends Pane {
                             city.getCoordinates().getX(), city.getCoordinates().getY());
                 }
             }
+        }
+    }
+
+    public void drawMapQuadrant() {
+        switch (currentMap) {
+            case 1:
+                gc.drawImage(mapQuadrant1, 0, 0);
+                drawPlayers();
+                break;
+            case 2:
+                gc.drawImage(mapQuadrant2, 0, 0);
+                drawPlayers();
+                break;
+            case 3:
+                gc.drawImage(mapQuadrant3, 0, 0);
+                drawPlayers();
+                break;
+            case 4:
+                gc.drawImage(mapQuadrant4, 0, 0);
+                drawPlayers();
+                break;
         }
     }
 
@@ -1315,16 +1341,16 @@ public class JTEUI extends Pane {
                     dialogStage.show();
                 }
             });
-            if (currentPlayer.getCurrentCity().equals(currentPlayer.getCardsOnHand().get(i).getName())
-                    && !currentPlayer.getHome().equals(currentPlayer.getCardsOnHand().get(i).getName())) {
-                button.setDisable(true);
-            }
             iv2.setImage(currentPlayer.getCardsOnHand().get(i).getFront());
             iv2.setFitWidth(110);
             iv2.setPreserveRatio(true);
             iv2.setSmooth(true);
             iv2.setCache(true);
             button.setGraphic(iv2);
+            if (currentPlayer.getCurrentCity().equals(currentPlayer.getCardsOnHand().get(i).getName())
+                    && !currentPlayer.getHome().equals(currentPlayer.getCardsOnHand().get(i).getName())) {
+                currentPlayer.getCardsOnHand().remove(i);
+            }
             leftPane.getChildren().add(button);
         }
     }
