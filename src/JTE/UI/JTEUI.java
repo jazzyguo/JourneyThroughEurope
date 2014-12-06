@@ -85,6 +85,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javax.swing.BorderFactory;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
 
 public class JTEUI extends Pane {
 
@@ -122,7 +124,9 @@ public class JTEUI extends Pane {
     // GamePane
     private BorderPane gamePanel;
     private Canvas map;
+    private Canvas flightMap;
     private GraphicsContext gc;
+    private Button flight;
     private Button gameHistory;
     private Button gameAbout;
     private Button save;
@@ -184,6 +188,7 @@ public class JTEUI extends Pane {
         initMainPane();
         initSplashScreen();
         initAboutPane();
+        initGameHistoryScreen();
     }
 
     // Methods
@@ -543,6 +548,15 @@ public class JTEUI extends Pane {
         }
     }
 
+    public void append(String s) {
+        try {
+            Document doc = gameHistoryPane.getDocument();
+            doc.insertString(doc.getLength(), s, null);
+        } catch (BadLocationException exc) {
+            exc.printStackTrace();
+        }
+    }
+
     private void initGameHistoryScreen() {
         gameHistoryPane = new JEditorPane();
         gameHistoryPane.setEditable(false);
@@ -551,6 +565,7 @@ public class JTEUI extends Pane {
         SwingNode swingNode = new SwingNode();
         swingNode.setContent(gameHistoryPane);
         gameHistoryPane.setText("Game History");
+        Document doc = gameHistoryPane.getDocument();
         gameHistoryScrollPane = new ScrollPane();
         gameHistoryScrollPane.setPrefSize(800, 800);
         gameHistoryScrollPane.setContent(swingNode);
@@ -619,6 +634,77 @@ public class JTEUI extends Pane {
         //     eventHandler.mouseClicked(event);
         // }
         // });
+        flight = new Button();
+        flight.setStyle("-fx-background-color:orange;-fx-border-color: brown");
+        Image flightImage = loadImage("Flight Plan.jpg");
+        ImageView flightImageView = new ImageView(flightImage);
+        flightImageView.setFitWidth(110);
+        flightImageView.setPreserveRatio(true);
+        flightImageView.setSmooth(true);
+        flightImageView.setCache(true);
+        flight.setGraphic(flightImageView);
+        flightMap = new Canvas();
+        flightMap.setHeight(550);
+        flightMap.setWidth(500);
+        GraphicsContext gc2 = flightMap.getGraphicsContext2D();
+        gc2.drawImage(flightImage, 0, 0);
+        flightMap.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                ArrayList<City> flightCities = eventHandler.data.getFlightCities();
+                ArrayList<City> cities = eventHandler.data.getCities();
+                double mouseX = event.getX();
+                double mouseY = event.getY();
+                System.out.println(mouseX + "," + mouseY);
+                int n = flightCities.size();
+                for (int x = 0; x < n; x++) {
+                    if (currentPlayer.getCurrentCity().equals(flightCities.get(x).getName())) {
+                        for (int i = 0; i < n; i++) {
+                            double citiesX = flightCities.get(i).getCoordinates().getX();
+                            double citiesY = flightCities.get(i).getCoordinates().getY();
+                            if ((mouseX > citiesX - 5 && mouseX < citiesX + 5)
+                                    && (mouseY > citiesY - 5 && mouseY < citiesY + 5)) {
+                                City clickedCity = flightCities.get(i);
+                                for (int c = 0; c < cities.size(); c++) {
+                                    if (clickedCity.getName().equals(cities.get(c).getName())) {
+                                        City moveCity = cities.get(c);
+                                        if (!currentPlayer.getCurrentCity().equals(moveCity.getName())) {
+                                            if (currentRoll >= 2) {
+                                                if (clickedCity.getQuadrant() == currentPlayer.getQuadrant()) {
+                                                    currentRoll--;
+                                                    moveAnimation(currentPlayer.getCurrentLocation(), moveCity);
+                                                    diceValue.setText("Current Points: " + currentRoll);
+                                                }
+                                                if (clickedCity.getQuadrant() != currentPlayer.getQuadrant()
+                                                        && currentRoll >= 4) {
+                                                    currentRoll = currentRoll - 3;
+                                                    moveToQuadrant(currentPlayer.getCurrentLocation(), moveCity);
+                                                    diceValue.setText("Current Points: " + currentRoll);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        flight.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(ActionEvent event) {
+                Stage dialogStage = new Stage();
+                Pane pane = new Pane();
+                dialogStage.initModality(Modality.WINDOW_MODAL);
+                dialogStage.initOwner(primaryStage);
+                pane.getChildren().add(flightMap);
+                Scene scene = new Scene(pane, 500, 550);
+                dialogStage.setScene(scene);
+                dialogStage.show();
+            }
+        });
         gameAbout = new Button();
         gameAbout.setStyle("-fx-background-color:orange;-fx-border-color: brown");
         Image aboutImage = loadImage("gameabout.png");
@@ -646,8 +732,7 @@ public class JTEUI extends Pane {
             @Override
             public void handle(ActionEvent event) {
                 try {
-                    // TODO Auto-generated method stub
-                    initGameHistoryScreen();
+                    // TODO Auto-generated method stub                   
                     eventHandler.respondToSwitchScreenRequest(JTEUIState.VIEW_HISTORY_STATE);
                 } catch (IOException ex) {
                     Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -742,7 +827,7 @@ public class JTEUI extends Pane {
         });
         diceValue = new Text();
         mapView.getChildren().addAll(map1, map2, map3, map4);
-        rightPane.getChildren().addAll(diceButton, diceValue, mapView, gameAbout, gameHistory, save, quitButton);
+        rightPane.getChildren().addAll(diceButton, diceValue, mapView, flight, gameAbout, gameHistory, save, quitButton);
         gamePanel.setRight(rightPane);
         gamePanel.setLeft(leftPane);
     }
@@ -800,6 +885,7 @@ public class JTEUI extends Pane {
     }
 
     public void moveAnimation(Coordinates currentLocation, City city) {
+        append("\n" + currentPlayer.getName() + " moved from " + currentPlayer.getCurrentCity() + " to " + city.getName() + ".");
         currentRoll--;
         AnimationTimer timer = new AnimationTimer() {
             int i = 0;
@@ -808,14 +894,20 @@ public class JTEUI extends Pane {
             double currentY = currentLocation.getY();
             double destX = city.getCoordinates().getX();
             double destY = city.getCoordinates().getY();
-            double differenceX = (city.getCoordinates().getX() - currentLocation.getX()) / 60;
-            double differenceY = (city.getCoordinates().getY() - currentLocation.getY()) / 60;
+            double differenceX = (city.getCoordinates().getX() - currentLocation.getX()) / 50;
+            double differenceY = (city.getCoordinates().getY() - currentLocation.getY()) / 50;
 
             @Override
             public void handle(long now) {
 
-                if (i == 60) {
+                if (i == 50) {
                     stop();
+                    if (!currentPlayer.isHuman() && currentRoll > 0) {
+                        computerMove();
+                    }
+                    if (!currentPlayer.isHuman() && currentRoll == 0) {
+                        diceValue.setText("End of Turn");
+                    }
                 }
                 if (previous == -1) {
                     previous = now;
@@ -837,6 +929,7 @@ public class JTEUI extends Pane {
     }
 
     public void moveToQuadrant(Coordinates currentLocation, City city) {
+        append("\n" + currentPlayer.getName() + " moved from " + currentPlayer.getCurrentCity() + " to " + city.getName() + ".");
         currentRoll--;
         currentPlayer.setCurrentLocation(city.getCoordinates());
         currentPlayer.setCurrentCity(city.getName());
@@ -844,6 +937,12 @@ public class JTEUI extends Pane {
         drawPlayers();
         showPlayerQuadrant();
         showRedLines();
+        if (!currentPlayer.isHuman() && currentRoll > 0) {
+            computerMove();
+        }
+        if (!currentPlayer.isHuman() && currentRoll == 0) {
+            diceValue.setText("End of Turn");
+        }
     }
 
     public void drawTempPlayers() {
@@ -886,12 +985,30 @@ public class JTEUI extends Pane {
                 if (i == 20) {
                     stop();
                     currentRoll = die.getRoll();
-                    diceButton.setDisable(true);
                     diceValue.setText("Current Points: " + currentRoll);
+                    diceButton.setDisable(true);
+                    if (!currentPlayer.isHuman()) {
+                        computerMove();
+                    }
                 }
             }
         };
         timer.start();
+    }
+
+    public void computerMove() {
+        City city = eventHandler.data.getCities().get(56);
+        if (currentPlayer.getQuadrant() == city.getQuadrant()) {
+            moveAnimation(currentPlayer.getCurrentLocation(), city);
+        } else {
+            moveToQuadrant(currentPlayer.getCurrentLocation(), city);
+        }
+        diceValue.setText("Current Points: " + currentRoll);
+    }
+
+    public ArrayList<String> shortestPath(City to) {
+        
+        return null;
     }
 
     public void playGame() {
@@ -915,10 +1032,10 @@ public class JTEUI extends Pane {
                     showCards();
                 }
                 if (currentRoll == 0) {
-                    diceValue.setText("End of Turn.");
+                    diceValue.setText("End of Turn");
                 }
                 if (currentRoll == -2) {
-                    diceValue.setText("Roll the dice.");
+                    diceValue.setText("Roll the dice");
                 }
             }
         });
@@ -933,10 +1050,10 @@ public class JTEUI extends Pane {
                     showRedLines();
                 }
                 if (currentRoll == 0) {
-                    diceValue.setText("End of Turn.");
+                    diceValue.setText("End of Turn");
                 }
                 if (currentRoll == -2) {
-                    diceValue.setText("Roll the dice.");
+                    diceValue.setText("Roll the dice");
                 }
                 map.setOnMouseReleased(new EventHandler<MouseEvent>() {
                     @Override
@@ -982,7 +1099,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                     }
@@ -997,7 +1114,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 2:
@@ -1008,7 +1125,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                     }
@@ -1023,7 +1140,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 2:
@@ -1034,7 +1151,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 3:
@@ -1045,7 +1162,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                     }
@@ -1060,7 +1177,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 2:
@@ -1071,7 +1188,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 3:
@@ -1082,7 +1199,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 4:
@@ -1093,7 +1210,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                     }
@@ -1108,7 +1225,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 2:
@@ -1119,7 +1236,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 3:
@@ -1130,7 +1247,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 4:
@@ -1141,7 +1258,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 5:
@@ -1152,7 +1269,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                     }
@@ -1167,7 +1284,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 2:
@@ -1178,7 +1295,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 3:
@@ -1189,7 +1306,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 4:
@@ -1200,7 +1317,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 5:
@@ -1211,7 +1328,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                         case 6:
@@ -1222,7 +1339,7 @@ public class JTEUI extends Pane {
                             showPlayerQuadrant();
                             showRedLines();
                             if (!currentPlayer.isHuman()) {
-                                computerMove();
+                                diceButton.fire();
                             }
                             break;
                     }
@@ -1230,13 +1347,8 @@ public class JTEUI extends Pane {
             }
         });
         if (!currentPlayer.isHuman()) {
-            computerMove();
+            diceButton.fire();
         }
-    }
-
-    public void computerMove() {
-        diceButton.fire();
-        
     }
 
     public void showRedLines() {

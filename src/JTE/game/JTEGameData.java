@@ -27,6 +27,7 @@ import javafx.scene.image.ImageView;
 public class JTEGameData {
 
     private ArrayList<City> cities;
+    private ArrayList<City> flightCities;
     private ArrayList<Player> players;
     private static ArrayList<Card> cards;
     private HashMap<String, String[]> cityLandNeighbors;
@@ -42,11 +43,13 @@ public class JTEGameData {
         ui = initUI;
         die = new Die();
         cities = new ArrayList<>();
+        flightCities = new ArrayList<>();
         cards = new ArrayList<>();
         players = new ArrayList<>();
         cityLandNeighbors = new HashMap<String, String[]>();
         citySeaNeighbors = new HashMap<String, String[]>();
         initCities("cities.txt");
+        initFlightCities("flightcities.txt");
         initCityNeighbors("city_neighbor.txt", "sea_neighbor.txt");
         initCards();
         initPlayerPlaceCard();
@@ -58,6 +61,10 @@ public class JTEGameData {
 
     public ArrayList<City> getCities() {
         return cities;
+    }
+
+    public ArrayList<City> getFlightCities() {
+        return flightCities;
     }
 
     public ArrayList<Player> getPlayers() {
@@ -80,6 +87,20 @@ public class JTEGameData {
         this.players = players;
     }
 
+    private void initFlightCities(String csvFile) {
+        DataSource ds = DataSource.connectCSV(csvFile);
+        ds.load();
+        DataSourceIterator iter = ds.iterator();
+        while (iter.hasData()) { //retrieves and stores the raw data
+            City city = new City();
+            city.setName(iter.fetchString("City"));
+            city.setQuadrant(iter.fetchInt("quarter"));
+            city.setCoordinates((double) (iter.fetchInt("x")), (double) (iter.fetchInt("y")));
+            this.flightCities.add(city);
+            iter.loadNext();
+        }
+    }
+    
     private void initCities(String csvFile) {
         DataSource ds = DataSource.connectCSV(csvFile);
         ds.load();
@@ -100,7 +121,7 @@ public class JTEGameData {
             if (city.getQuadrant() == 4) {
                 city.setCoordinates(((double) (iter.fetchInt("x")) / 1927) * 481, ((double) (iter.fetchInt("y")) / 2561) * 640);
             }
-            city.setColor(iter.fetchString("Color"));
+            city.setColor(iter.fetchString("Color"));           
             this.cities.add(city);
             iter.loadNext();
         }
@@ -503,12 +524,15 @@ public class JTEGameData {
         public Coordinates getCurrentLocation() {
             return currentLocation;
         }
-        public Coordinates getTempLocation(){
+
+        public Coordinates getTempLocation() {
             return tempLocation;
         }
-        public void setTempLocation(Coordinates temp){
+
+        public void setTempLocation(Coordinates temp) {
             this.tempLocation = temp;
         }
+
         public Coordinates getHomeLocation() {
             return homeLocation;
         }
