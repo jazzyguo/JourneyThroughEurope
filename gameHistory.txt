@@ -1,0 +1,13 @@
+
+Game History
+Player 1 rolled 4.
+Player 1 moved from BERLIN to DRESDEN.
+Player 1 moved from DRESDEN to PRAHA.
+Player 1 moved from PRAHA to LINZ.
+Player 1 moved from LINZ to SALZBURG.
+Player 2 rolled 5.
+Player 2 moved from NARVIK to TORONDHEIM.
+Player 2 moved from TORONDHEIM to BERGEN.
+Player 2 moved from BERGEN to NEWCASTLE.
+Player 2 moved from NEWCASTLE to BREMEN.
+Player 2 moved from BREMEN to HANNOVER.

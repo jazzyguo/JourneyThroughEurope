@@ -26,7 +26,14 @@ import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -66,6 +73,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
@@ -83,6 +91,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import static javafx.scene.paint.Color.color;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -197,6 +206,10 @@ public class JTEUI extends Pane {
     }
 
     // Methods
+    public void setPlayers(ArrayList<Player> players) {
+        this.players = players;
+    }
+
     public void setStage(Stage stage) {
         primaryStage = stage;
     }
@@ -266,6 +279,176 @@ public class JTEUI extends Pane {
         mainPane.setPadding(marginlessInsets);
     }
 
+    public void loadGameDataFromFile(File file) {
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(file));
+            String str;
+            str = in.readLine();
+            int numPlayers = Integer.parseInt(str);
+            players = new ArrayList<>();
+            System.out.println(numPlayers);
+            while ((str = in.readLine()) != null) {
+                Player player = new Player();
+                players.add(player);
+                player.setName(str);
+                str = in.readLine();
+                player.setCurrentCity(str);
+                str = in.readLine();
+                int x = Integer.parseInt(str);
+                str = in.readLine();
+                int y = Integer.parseInt(str);
+                str = in.readLine();
+                player.setQuadrant(Integer.parseInt(str));
+                str = in.readLine();
+                player.setHome(str);
+                str = in.readLine();
+                if (str.equals("true")) {
+                    player.setHuman();
+                }
+                str = in.readLine();
+                player.setNum(Integer.parseInt(str));
+                str = in.readLine();
+                player.setHomeQ(Integer.parseInt(str));
+                str = in.readLine();
+                int hX = Integer.parseInt(str);
+                str = in.readLine();
+                int hY = Integer.parseInt(str);
+                player.setHomeLocation(new Coordinates(hX, hY));
+                str = in.readLine();
+                player.setCurrentLocation(new Coordinates(x, y));
+                int numCards = Integer.parseInt(str);
+                for (int c = 0; c < numCards; c++) {
+                    str = in.readLine();
+                    String[] cards = str.split(",");
+                    String cardName = cards[0];
+                    String cardColor = cards[1];
+                    String frontString, backString;
+                    Image front, back;
+                    Card card;
+                    File f, p;
+                    switch (cardColor) {
+                        case "red":
+                            frontString = "red/" + cardName + ".jpg";
+                            backString = "";
+                            System.out.println(frontString);
+                            f = new File("images/red/" + cardName + "_I.jpg");
+                            p = new File("images/red/" + cardName + "_I.png");
+                            if (f.exists()) {
+                                backString = "red/" + cardName + "_I.jpg";
+                                System.out.println(backString);
+                                back = loadImage(backString);
+                            }
+                            if (p.exists()) {
+                                backString = "red/" + cardName + "_I.png";
+                                System.out.println(backString);
+                                back = loadImage(backString);
+                            }
+                            if (!p.exists() && !f.exists()) {
+                                backString = frontString;
+                            }
+                            front = loadImage(frontString);
+                            back = loadImage(backString);
+                            card = new Card(cardColor, cardName, front, back);
+                            player.getCardsOnHand().add(card);
+                            break;
+                        case "green":
+                            frontString = "green/" + cardName + ".jpg";
+                            backString = "";
+                            System.out.println(frontString);
+                            f = new File("images/green/" + cardName + "_I.jpg");
+                            p = new File("images/green/" + cardName + "_I.png");
+                            if (f.exists()) {
+                                backString = "green/" + cardName + "_I.jpg";
+                                System.out.println(backString);
+                                back = loadImage(backString);
+                            }
+                            if (p.exists()) {
+                                backString = "green/" + cardName + "_I.png";
+                                System.out.println(backString);
+                                back = loadImage(backString);
+                            }
+                            if (!p.exists() && !f.exists()) {
+                                backString = frontString;
+                            }
+                            front = loadImage(frontString);
+                            back = loadImage(backString);
+                            card = new Card(cardColor, cardName, front, back);
+                            player.getCardsOnHand().add(card);
+                            break;
+                        case "yellow":
+                            frontString = "yellow/" + cardName + ".jpg";
+                            backString = "";
+                            System.out.println(frontString);
+                            f = new File("images/yellow/" + cardName + "_I.jpg");
+                            p = new File("images/yellow/" + cardName + "_I.png");
+                            if (f.exists()) {
+                                backString = "yellow/" + cardName + "_I.jpg";
+                                System.out.println(backString);
+                                back = loadImage(backString);
+                            }
+                            if (p.exists()) {
+                                backString = "yellow/" + cardName + "_I.png";
+                                System.out.println(backString);
+                                back = loadImage(backString);
+                            }
+                            if (!p.exists() && !f.exists()) {
+                                backString = frontString;
+                            }
+                            front = loadImage(frontString);
+                            back = loadImage(backString);
+                            card = new Card(cardColor, cardName, front, back);
+                            player.getCardsOnHand().add(card);
+                            break;
+                    }
+                }
+            }
+            JTEGameData data = new JTEGameData();
+            data.setPlayers(players);
+            eventHandler.respondToLoadGame(data);
+            getRoute();
+            in.close();
+        } catch (IOException e) {
+        }
+    }
+
+    private void getRoute() {
+        for (Player player : players) {
+            int numCards = player.getCardsOnHand().size();
+            switch (numCards) {
+                case 1:
+                    if (!player.isHuman()) {
+                        ArrayList<String> route = new ArrayList();
+                        route.addAll(eventHandler.data.shortestPath(player.getCurrentCity(), player.getHome()));
+                        for (String s : route) {
+                            player.getRoute().add(s);
+                        }
+                    }
+                    break;
+                case 2:
+                    if (!player.isHuman()) {
+                        ArrayList<String> route = new ArrayList();
+                        route.addAll(eventHandler.data.shortestPath(player.getCurrentCity(), player.getCardsOnHand().get(1).getName()));
+                        route.addAll(eventHandler.data.shortestPath(player.getCurrentCity(), player.getHome()));
+                        for (String s : route) {
+                            player.getRoute().add(s);
+                        }
+                    }
+                    break;
+                case 3:
+                    if (!player.isHuman()) {
+                        ArrayList<String> route = new ArrayList();
+                        route.addAll(eventHandler.data.shortestPath(player.getCurrentCity(), player.getCardsOnHand().get(1).getName()));
+                        route.addAll(eventHandler.data.shortestPath(player.getCardsOnHand().get(1).getName(), player.getCardsOnHand().get(2).getName()));
+                        route.addAll(eventHandler.data.shortestPath(player.getCardsOnHand().get(2).getName(), player.getCurrentCity()));
+                        for (String s : route) {
+                            player.getRoute().add(s);
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
     public void initSplashScreen() {
         PropertiesManager props = PropertiesManager.getPropertiesManager();
         String splashScreenImagePath = props.getProperty(JTEPropertyType.SPLASH_SCREEN_IMAGE_NAME);
@@ -321,7 +504,29 @@ public class JTEUI extends Pane {
 
             @Override
             public void handle(ActionEvent event) {
+                File file = new File("save.txt");
+                if (file.exists()) {
+                    System.out.println("loading");
+                    loadGameDataFromFile(file);
+                    initPlayer();
+                    gsm.currentGameState = GAME_IN_PROGRESS;
+                    playGame();
+                    loadGameHistory();
+                }
+            }
 
+            private void loadGameHistory() {
+                try {
+                    BufferedReader in = new BufferedReader(new FileReader("gameHistory.txt"));
+                    String str;
+                    str = in.readLine();
+                    str = in.readLine();
+                    while ((str = in.readLine()) != null) {
+                        append(str);
+                    }
+                    in.close();
+                } catch (IOException e) {
+                }
             }
         });
         aboutButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -345,6 +550,39 @@ public class JTEUI extends Pane {
 
         mainPane.setCenter(splashScreenPane);
         splashScreenPane.getChildren().add(optionSelectionPane);
+    }
+
+    public void initPlayer() {
+        for (Player player : players) {
+            int num = player.getNum();
+            switch (num) {
+                case 1:
+                    player.setImage(loadImage("p1.png"));
+                    player.setFlag(loadImage("1.png"));
+                    break;
+                case 2:
+                    player.setImage(loadImage("p2.png"));
+                    player.setFlag(loadImage("2.png"));
+                    break;
+                case 3:
+                    player.setImage(loadImage("p3.png"));
+                    player.setFlag(loadImage("3.png"));
+                    break;
+                case 4:
+                    player.setImage(loadImage("p4.png"));
+                    player.setFlag(loadImage("4.png"));
+                    break;
+                case 5:
+                    player.setImage(loadImage("p5.png"));
+                    player.setFlag(loadImage("5.png"));
+                    break;
+                case 6:
+                    player.setImage(loadImage("p6.png"));
+                    player.setFlag(loadImage("6.png"));
+                    break;
+            }
+
+        }
     }
 
     /**
@@ -574,6 +812,8 @@ public class JTEUI extends Pane {
         gameHistoryScrollPane = new ScrollPane();
         gameHistoryScrollPane.setPrefSize(800, 800);
         gameHistoryScrollPane.setContent(swingNode);
+        gameHistoryScrollPane.setHbarPolicy(ScrollBarPolicy.NEVER);
+        gameHistoryScrollPane.setVbarPolicy(ScrollBarPolicy.ALWAYS);
         historyNorthToolBar = new HBox();
         // MAKE AND INIT THE BACK BUTTON
         backButton = initToolbarButton(historyNorthToolBar,
@@ -749,6 +989,31 @@ public class JTEUI extends Pane {
         Image saveImage = loadImage("save.png");
         ImageView saveImageView = new ImageView(saveImage);
         save.setGraphic(saveImageView);
+        save.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                eventHandler.data.saveGameDataToFile(new File("save.txt"));
+                Document doc = gameHistoryPane.getDocument();
+                saveGameHistory(doc);
+            }
+
+            private void saveGameHistory(Document doc) {
+                PrintWriter writer = null;
+                try {
+                    writer = new PrintWriter(new File("gameHistory.txt"), "UTF-8");
+                    try {
+                        writer.println(doc.getText(0, doc.getLength()));
+                    } catch (BadLocationException ex) {
+                        Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    writer.close();
+                } catch (FileNotFoundException ex) {
+                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
         mapView = new FlowPane();
         mapView.setPrefWrapLength(160);
         diceButton = new Button();
@@ -908,6 +1173,7 @@ public class JTEUI extends Pane {
                 if (i == 50) {
                     stop();
                     if (!currentPlayer.isHuman() && currentRoll > 0) {
+                        showPlayerQuadrant();
                         computerMove();
                     }
                     if (!currentPlayer.isHuman() && currentRoll == 0) {
@@ -932,7 +1198,6 @@ public class JTEUI extends Pane {
                     currentY = currentY + differenceY;
                     currentPlayer.setCurrentLocation(new Coordinates(currentX, currentY));
                     currentPlayer.setCurrentCity(city.getName());
-                    drawPlayers();
                     showPlayerQuadrant();
                     showRedLines();
                     i++;
@@ -945,12 +1210,9 @@ public class JTEUI extends Pane {
     public void moveToQuadrant(Coordinates currentLocation, City city) {
         append("\n" + currentPlayer.getName() + " moved from " + currentPlayer.getCurrentCity() + " to " + city.getName() + ".");
         currentRoll--;
+        currentPlayer.setQuadrant(city.getQuadrant());
         currentPlayer.setCurrentLocation(city.getCoordinates());
         currentPlayer.setCurrentCity(city.getName());
-        currentPlayer.setQuadrant(city.getQuadrant());
-        drawPlayers();
-        showPlayerQuadrant();
-        showRedLines();
         for (int i = 0; i < currentPlayer.getCardsOnHand().size(); i++) {
             if (currentPlayer.getCurrentCity().equals(currentPlayer.getCardsOnHand().get(i).getName())
                     && !currentPlayer.getHome().equals(currentPlayer.getCardsOnHand().get(i).getName())) {
@@ -961,11 +1223,14 @@ public class JTEUI extends Pane {
             winGame();
         }
         if (!currentPlayer.isHuman() && currentRoll > 0) {
+            showPlayerQuadrant();
             computerMove();
         }
         if (!currentPlayer.isHuman() && currentRoll == 0) {
             diceValue.setText("End of Turn");
         }
+        showPlayerQuadrant();
+        showRedLines();
     }
 
     public void winGame() {
@@ -1084,6 +1349,7 @@ public class JTEUI extends Pane {
                 if (currentRoll == -2) {
                     diceValue.setText("Roll the dice");
                 }
+                eventHandler.mouseClicked(event);
             }
         });
         map.setOnMouseDragged(new EventHandler<MouseEvent>() {

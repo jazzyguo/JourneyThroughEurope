@@ -11,8 +11,15 @@ import big.data.DataSource;
 import big.data.DataSourceIterator;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,6 +29,8 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -46,6 +55,20 @@ public class JTEGameData {
      * Construct this object when a game begins.
      */
 
+    public JTEGameData() {
+        die = new Die();
+        cities = new ArrayList<>();
+        flightCities = new ArrayList<>();
+        cards = new ArrayList<>();
+        players = new ArrayList<>();
+        cityLandNeighbors = new HashMap<String, String[]>();
+        citySeaNeighbors = new HashMap<String, String[]>();
+        initCities("cities.txt");
+        initFlightCities("flightcities.txt");
+        initCityNeighbors("city_neighbor.txt", "sea_neighbor.txt");
+        initCityInfo("cityinfo.txt");
+    }
+
     public JTEGameData(JTEUI initUI) {
         ui = initUI;
         die = new Die();
@@ -60,6 +83,7 @@ public class JTEGameData {
         initCityNeighbors("city_neighbor.txt", "sea_neighbor.txt");
         initCards();
         initPlayerPlaceCard();
+        initCityInfo("cityinfo.txt");
     }
 
     public Die getDie() {
@@ -145,6 +169,48 @@ public class JTEGameData {
 
     public void setPlayers(ArrayList<Player> players) {
         this.players = players;
+    }
+
+    private void initCityInfo(String file) {
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(file));
+            String str;
+            str = in.readLine();
+            for (City city : cities) {
+                if (str.equals(city.name)) {
+                    String info = "";
+                    str = in.readLine();
+                    info += str;
+                    str = in.readLine();
+                    info += str;
+                    str = in.readLine();
+                    info += str;
+                    str = in.readLine();
+                    info += str;
+                    str = in.readLine();
+                    city.setInfo(info);
+                }
+            }
+            while ((str = in.readLine()) != null) {
+                for (City city : cities) {
+                    if (str !=null && str.equals(city.name)) {
+                        String info = "";
+                        str = in.readLine();
+                        info += str;
+                        str = in.readLine();
+                        info += str;
+                        str = in.readLine();
+                        info += str;
+                        str = in.readLine();
+                        info += str;
+                        str = in.readLine();
+                        city.setInfo(info);
+                    }
+                }
+            }
+            in.close();
+        } catch (IOException e) {
+        }
     }
 
     private void initFlightCities(String csvFile) {
@@ -306,6 +372,36 @@ public class JTEGameData {
                     cards.add(card);
                     break;
             }
+        }
+    }
+
+    public void saveGameDataToFile(File file) {
+        try {
+            PrintWriter writer = null;
+            writer = new PrintWriter(file, "UTF-8");
+            writer.println(players.size());
+            for (int i = 0; i < players.size(); i++) {
+                writer.println(players.get(i).getName());
+                writer.println(players.get(i).getCurrentCity());
+                writer.println((int) players.get(i).getCurrentLocation().getX());
+                writer.println((int) players.get(i).getCurrentLocation().getY());
+                writer.println((int) players.get(i).getQuadrant());
+                writer.println(players.get(i).getHome());
+                writer.println(players.get(i).isHuman());
+                writer.println(players.get(i).getNum());
+                writer.println(players.get(i).getHomeQ());
+                writer.println((int) players.get(i).getHomeLocation().getX());
+                writer.println((int) players.get(i).getHomeLocation().getY());
+                writer.println(players.get(i).getCardsOnHand().size());
+                for (int c = 0; c < players.get(i).getCardsOnHand().size(); c++) {
+                    writer.println(players.get(i).getCardsOnHand().get(c).name + "," + players.get(i).getCardsOnHand().get(c).color);
+                }
+            }
+            writer.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(JTEGameData.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(JTEGameData.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -760,7 +856,7 @@ public class JTEGameData {
 
     public static class City {
 
-        String name, color;
+        String name, color, info;
         Coordinates cityCoordinates;
         int mapQuadrant;
         boolean hasAirport;
@@ -775,6 +871,14 @@ public class JTEGameData {
             cityCoordinates = coord;
             mapQuadrant = mapQ;
             hasAirport = false;
+        }
+
+        public String getInfo() {
+            return info;
+        }
+
+        public void setInfo(String info) {
+            this.info = info;
         }
 
         public String getName() {

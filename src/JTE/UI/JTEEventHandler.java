@@ -19,6 +19,9 @@ import JTE.game.JTEGameData.Player;
 import JTE.game.JTEGameStateManager;
 import static JTE.game.JTEGameStateManager.JTEGameState.GAME_IN_PROGRESS;
 import static JTE.game.JTEGameStateManager.JTEGameState.GAME_OVER;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Level;
@@ -39,7 +42,10 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -56,6 +62,10 @@ public class JTEEventHandler {
      */
     public JTEEventHandler(JTEUI initUI) {
         ui = initUI;
+    }
+
+    public JTEUI getUI() {
+        return ui;
     }
 
     /**
@@ -78,6 +88,22 @@ public class JTEEventHandler {
         data = new JTEGameData(ui);
         ui.initGameScreen();
         gsm.setData(data);
+        try {
+            respondToSwitchScreenRequest(JTEUI.JTEUIState.PLAY_GAME_STATE);
+        } catch (IOException ex) {
+            Logger.getLogger(JTEEventHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        for (int i = 0; i < data.getPlayers().size(); i++) {
+            System.out.println(data.getPlayers().get(i).getName());
+            System.out.println(data.getPlayers().get(i).isHuman());
+        }
+    }
+
+    public void respondToLoadGame(JTEGameData data) {
+        JTEGameStateManager gsm = ui.getGSM();
+        this.data = data;
+        gsm.setData(data);
+        ui.initGameScreen();
         try {
             respondToSwitchScreenRequest(JTEUI.JTEUIState.PLAY_GAME_STATE);
         } catch (IOException ex) {
@@ -220,19 +246,28 @@ public class JTEEventHandler {
         for (int i = 0; i < n; i++) {
             double citiesX = cities.get(i).getCoordinates().getX();
             double citiesY = cities.get(i).getCoordinates().getY();
-            if ((mouseX > citiesX - 5 && mouseX < citiesX + 5)
-                    && (mouseY > citiesY - 5 && mouseY < citiesY + 5)
+            if ((mouseX > citiesX - 10 && mouseX < citiesX + 10)
+                    && (mouseY > citiesY - 10 && mouseY < citiesY + 10)
                     && (ui.getMap() == cities.get(i).getQuadrant())) {
                 City clickedCity = cities.get(i);
-                HashMap<String, String[]> land = data.getCityLandNeighbors();
-                String[] lands = land.get(cities.get(i).getName());
-                for (int c = 0; c < lands.length; c++) {
-                    System.out.println(lands[c]);
-                }
-                HashMap<String, String[]> sea = data.getCitySeaNeighbors();
-                String[] seas = sea.get(cities.get(i).getName());
-                for (int c = 0; c < seas.length; c++) {
-                    System.out.println(seas[c]);
+                if (clickedCity.getInfo() != null) {
+                    String[] info = clickedCity.getInfo().split(",");
+                    String cityInfo = "";
+                    for(String string: info){
+                        cityInfo += string +"\n";
+                    }
+                    Stage dialogStage = new Stage();
+                    dialogStage.initModality(Modality.WINDOW_MODAL);
+                    FlowPane exitPane = new FlowPane();
+                    Text text = new Text();
+                    Text text1 = new Text();
+                    text1.setText(clickedCity.getName()+ ":");
+                    text.setText(cityInfo);
+                    exitPane.getChildren().addAll(text1,text);
+                    Scene scene = new Scene(exitPane, 500, 200);
+                    dialogStage.setScene(scene);
+                    dialogStage.show();
+                    // WHAT'S THE USER'S DECISION?              
                 }
             }
         }
