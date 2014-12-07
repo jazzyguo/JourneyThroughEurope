@@ -14,11 +14,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  *
@@ -83,6 +90,59 @@ public class JTEGameData {
         return citySeaNeighbors;
     }
 
+    public ArrayList<String> shortestPath(String from, String to) {
+        Queue<Node> q = new LinkedList<>();
+        Set<String> v = new TreeSet<>();
+        Node head = new Node(from);
+        q.add(head);
+        v.add(from);
+        while (!q.isEmpty()) {
+            Node n = q.poll();
+            if (n.name.equals(to)) {
+                break;
+            }
+            String[] neighbors = getNeighbors(n.getName());
+            if (neighbors != null) {
+                for (int i = 0; i < neighbors.length; i++) {
+                    if (!v.contains(neighbors[i])) {
+                        v.add(neighbors[i]);
+                        Node node = new Node(neighbors[i]);
+                        q.add(node);
+                        n.getNodes().add(node);
+                    }
+                }
+            }
+        }
+        ArrayList<String> path = new ArrayList();
+        path(head, path, to);
+        if (!path.isEmpty()) {
+            path.remove(0);
+        }
+        Collections.reverse(path);
+        return path;
+    }
+
+    public boolean path(Node node, ArrayList<String> path, String dest) {
+        if (node.getName().equals(dest)) {
+            path.add(node.getName());
+            return true;
+        }
+        for (Node n : node.getNodes()) {
+            if (path(n, path, dest)) {
+                path.add(n.getName());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String[] getNeighbors(String city) {
+        String[] land = cityLandNeighbors.get(city);
+        String[] sea = citySeaNeighbors.get(city);
+        String[] all = ArrayUtils.addAll(land, sea);
+        return all;
+    }
+
     public void setPlayers(ArrayList<Player> players) {
         this.players = players;
     }
@@ -100,7 +160,7 @@ public class JTEGameData {
             iter.loadNext();
         }
     }
-    
+
     private void initCities(String csvFile) {
         DataSource ds = DataSource.connectCSV(csvFile);
         ds.load();
@@ -121,7 +181,7 @@ public class JTEGameData {
             if (city.getQuadrant() == 4) {
                 city.setCoordinates(((double) (iter.fetchInt("x")) / 1927) * 481, ((double) (iter.fetchInt("y")) / 2561) * 640);
             }
-            city.setColor(iter.fetchString("Color"));           
+            city.setColor(iter.fetchString("Color"));
             this.cities.add(city);
             iter.loadNext();
         }
@@ -260,6 +320,15 @@ public class JTEGameData {
                     players.get(i).setNum(1);
                     players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
                     players.get(i).initHand();
+                    if (!players.get(i).isHuman) {
+                        ArrayList<String> route = new ArrayList();
+                        route.addAll(shortestPath(players.get(i).currentCity, players.get(i).getCardsOnHand().get(1).name));
+                        route.addAll(shortestPath(players.get(i).getCardsOnHand().get(1).name, players.get(i).getCardsOnHand().get(2).name));
+                        route.addAll(shortestPath(players.get(i).getCardsOnHand().get(2).name, players.get(i).currentCity));
+                        for (String s : route) {
+                            players.get(i).getRoute().add(s);
+                        }
+                    }
                     for (City city : cities) {
                         if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
                             players.get(i).setCurrentLocation(city.getCoordinates());
@@ -277,6 +346,15 @@ public class JTEGameData {
                     players.get(i).setNum(2);
                     players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
                     players.get(i).initHand();
+                    if (!players.get(i).isHuman) {
+                        ArrayList<String> route1 = new ArrayList();
+                        route1.addAll(shortestPath(players.get(i).currentCity, players.get(i).getCardsOnHand().get(1).name));
+                        route1.addAll(shortestPath(players.get(i).getCardsOnHand().get(1).name, players.get(i).getCardsOnHand().get(2).name));
+                        route1.addAll(shortestPath(players.get(i).getCardsOnHand().get(2).name, players.get(i).currentCity));
+                        for (String s : route1) {
+                            players.get(i).getRoute().add(s);
+                        }
+                    }
                     for (City city : cities) {
                         if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
                             players.get(i).setCurrentLocation(city.getCoordinates());
@@ -294,6 +372,15 @@ public class JTEGameData {
                     players.get(i).setNum(3);
                     players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
                     players.get(i).initHand();
+                    if (!players.get(i).isHuman) {
+                        ArrayList<String> route2 = new ArrayList();
+                        route2.addAll(shortestPath(players.get(i).currentCity, players.get(i).getCardsOnHand().get(1).name));
+                        route2.addAll(shortestPath(players.get(i).getCardsOnHand().get(1).name, players.get(i).getCardsOnHand().get(2).name));
+                        route2.addAll(shortestPath(players.get(i).getCardsOnHand().get(2).name, players.get(i).currentCity));
+                        for (String s : route2) {
+                            players.get(i).getRoute().add(s);
+                        }
+                    }
                     for (City city : cities) {
                         if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
                             players.get(i).setCurrentLocation(city.getCoordinates());
@@ -311,6 +398,15 @@ public class JTEGameData {
                     players.get(i).setNum(4);
                     players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
                     players.get(i).initHand();
+                    if (!players.get(i).isHuman) {
+                        ArrayList<String> route3 = new ArrayList();
+                        route3.addAll(shortestPath(players.get(i).currentCity, players.get(i).getCardsOnHand().get(1).name));
+                        route3.addAll(shortestPath(players.get(i).getCardsOnHand().get(1).name, players.get(i).getCardsOnHand().get(2).name));
+                        route3.addAll(shortestPath(players.get(i).getCardsOnHand().get(2).name, players.get(i).currentCity));
+                        for (String s : route3) {
+                            players.get(i).getRoute().add(s);
+                        }
+                    }
                     for (City city : cities) {
                         if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
                             players.get(i).setCurrentLocation(city.getCoordinates());
@@ -328,6 +424,15 @@ public class JTEGameData {
                     players.get(i).setNum(5);
                     players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
                     players.get(i).initHand();
+                    if (!players.get(i).isHuman) {
+                        ArrayList<String> route4 = new ArrayList();
+                        route4.addAll(shortestPath(players.get(i).currentCity, players.get(i).getCardsOnHand().get(1).name));
+                        route4.addAll(shortestPath(players.get(i).getCardsOnHand().get(1).name, players.get(i).getCardsOnHand().get(2).name));
+                        route4.addAll(shortestPath(players.get(i).getCardsOnHand().get(2).name, players.get(i).currentCity));
+                        for (String s : route4) {
+                            players.get(i).getRoute().add(s);
+                        }
+                    }
                     for (City city : cities) {
                         if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
                             players.get(i).setCurrentLocation(city.getCoordinates());
@@ -345,6 +450,15 @@ public class JTEGameData {
                     players.get(i).setNum(6);
                     players.get(i).setCurrentCity(players.get(i).getCardsOnHand().get(0).getName());
                     players.get(i).initHand();
+                    if (!players.get(i).isHuman) {
+                        ArrayList<String> route5 = new ArrayList();
+                        route5.addAll(shortestPath(players.get(i).currentCity, players.get(i).getCardsOnHand().get(1).name));
+                        route5.addAll(shortestPath(players.get(i).getCardsOnHand().get(1).name, players.get(i).getCardsOnHand().get(2).name));
+                        route5.addAll(shortestPath(players.get(i).getCardsOnHand().get(2).name, players.get(i).currentCity));
+                        for (String s : route5) {
+                            players.get(i).getRoute().add(s);
+                        }
+                    }
                     for (City city : cities) {
                         if (city.getName().equals(players.get(i).getCardsOnHand().get(0).getName())) {
                             players.get(i).setCurrentLocation(city.getCoordinates());
@@ -416,6 +530,7 @@ public class JTEGameData {
     public static class Player {
 
         private ArrayList<Card> cardsOnHand;
+        Queue<String> route;
         private Coordinates currentLocation, tempLocation;
         private Coordinates homeLocation;
         private String currentCity, home;
@@ -427,11 +542,16 @@ public class JTEGameData {
         private boolean turn;
 
         public Player() {
+            route = new LinkedList<>();
             isHuman = false;
             cardsOnHand = new ArrayList<>();
             currentLocation = new Coordinates();
             tempLocation = new Coordinates();
             turn = false;
+        }
+
+        public Queue<String> getRoute() {
+            return route;
         }
 
         public int getHomeQ() {
@@ -727,6 +847,29 @@ public class JTEGameData {
 
         public void setY(double Y) {
             this.Y = Y;
+        }
+    }
+
+    public static class Node {
+
+        String name;
+        ArrayList<Node> nodes;
+
+        public Node(String name) {
+            this.name = name;
+            nodes = new ArrayList();
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public ArrayList<Node> getNodes() {
+            return nodes;
+        }
+
+        public void setName(String name) {
+            this.name = name;
         }
     }
 }

@@ -34,6 +34,11 @@ import java.net.URLConnection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -139,7 +144,7 @@ public class JTEUI extends Pane {
     private Text currentPlayerName;
     Die die;
     int currentRoll = -2;
-
+    int rolled;
     //GameHistory
     private JEditorPane gameHistoryPane;
     private ScrollPane gameHistoryScrollPane;
@@ -908,6 +913,15 @@ public class JTEUI extends Pane {
                     if (!currentPlayer.isHuman() && currentRoll == 0) {
                         diceValue.setText("End of Turn");
                     }
+                    for (int x = 0; x < currentPlayer.getCardsOnHand().size(); x++) {
+                        if (currentPlayer.getCurrentCity().equals(currentPlayer.getCardsOnHand().get(x).getName())
+                                && !currentPlayer.getHome().equals(currentPlayer.getCardsOnHand().get(x).getName())) {
+                            currentPlayer.getCardsOnHand().remove(x);
+                        }
+                    }
+                    if (currentPlayer.getCardsOnHand().size() == 1 && currentPlayer.getCurrentCity().equals(currentPlayer.getHome())) {
+                        winGame();
+                    }
                 }
                 if (previous == -1) {
                     previous = now;
@@ -937,12 +951,43 @@ public class JTEUI extends Pane {
         drawPlayers();
         showPlayerQuadrant();
         showRedLines();
+        for (int i = 0; i < currentPlayer.getCardsOnHand().size(); i++) {
+            if (currentPlayer.getCurrentCity().equals(currentPlayer.getCardsOnHand().get(i).getName())
+                    && !currentPlayer.getHome().equals(currentPlayer.getCardsOnHand().get(i).getName())) {
+                currentPlayer.getCardsOnHand().remove(i);
+            }
+        }
+        if (currentPlayer.getCardsOnHand().size() == 1 && currentPlayer.getCurrentCity().equals(currentPlayer.getHome())) {
+            winGame();
+        }
         if (!currentPlayer.isHuman() && currentRoll > 0) {
             computerMove();
         }
         if (!currentPlayer.isHuman() && currentRoll == 0) {
             diceValue.setText("End of Turn");
         }
+    }
+
+    public void winGame() {
+        PropertiesManager props = PropertiesManager.getPropertiesManager();
+        Stage dialogStage = new Stage();
+        dialogStage.initModality(Modality.WINDOW_MODAL);
+        BorderPane exitPane = new BorderPane();
+        Button yesButton = new Button();
+        yesButton.setText("" + currentPlayer.getName() + " has won the game!");
+        exitPane.setCenter(yesButton);
+        Scene scene = new Scene(exitPane, 250, 100);
+        dialogStage.setScene(scene);
+        dialogStage.show();
+        // WHAT'S THE USER'S DECISION?
+        yesButton.setOnAction(e -> {
+            try {
+                eventHandler.respondToSwitchScreenRequest(JTEUIState.SPLASH_SCREEN_STATE);
+                dialogStage.close();
+            } catch (IOException ex) {
+                Logger.getLogger(JTEUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
     }
 
     public void drawTempPlayers() {
@@ -985,6 +1030,8 @@ public class JTEUI extends Pane {
                 if (i == 20) {
                     stop();
                     currentRoll = die.getRoll();
+                    rolled = currentRoll;
+                    append("\n" + currentPlayer.getName() + " rolled " + rolled + ".");
                     diceValue.setText("Current Points: " + currentRoll);
                     diceButton.setDisable(true);
                     if (!currentPlayer.isHuman()) {
@@ -997,18 +1044,18 @@ public class JTEUI extends Pane {
     }
 
     public void computerMove() {
-        City city = eventHandler.data.getCities().get(56);
-        if (currentPlayer.getQuadrant() == city.getQuadrant()) {
-            moveAnimation(currentPlayer.getCurrentLocation(), city);
-        } else {
-            moveToQuadrant(currentPlayer.getCurrentLocation(), city);
+        String cityName = currentPlayer.getRoute().poll();
+        for (City city : eventHandler.data.getCities()) {
+            if (city.getName().equals(cityName)) {
+                City moveCity = city;
+                if (currentPlayer.getQuadrant() == moveCity.getQuadrant()) {
+                    moveAnimation(currentPlayer.getCurrentLocation(), moveCity);
+                } else {
+                    moveToQuadrant(currentPlayer.getCurrentLocation(), moveCity);
+                }
+                diceValue.setText("Current Points: " + currentRoll);
+            }
         }
-        diceValue.setText("Current Points: " + currentRoll);
-    }
-
-    public ArrayList<String> shortestPath(City to) {
-        
-        return null;
     }
 
     public void playGame() {
@@ -1353,10 +1400,10 @@ public class JTEUI extends Pane {
 
     public void showRedLines() {
         ArrayList<String> availableCities = new ArrayList();
-        if (eventHandler.data.getCityLandNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+        if (eventHandler.data.getCityLandNeighbors().get(currentPlayer.getCurrentCity()) != null) {
             availableCities.addAll(Arrays.asList(eventHandler.data.getCityLandNeighbors().get(currentPlayer.getCurrentCity())));
         }
-        if (eventHandler.data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity()).length != 0) {
+        if (eventHandler.data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity()) != null) {
             availableCities.addAll(Arrays.asList(eventHandler.data.getCitySeaNeighbors().get(currentPlayer.getCurrentCity())));
         }
         for (String string : availableCities) {
